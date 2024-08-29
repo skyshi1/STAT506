@@ -1,6 +1,8 @@
 ---
-title: "Test"
+title: "STATS 506"
+subtitle: "Problem Set 1"
 author: "Sky Shi"
+date-modified: today
 format: html
 editor: visual
 ---
