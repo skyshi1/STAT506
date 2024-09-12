@@ -160,7 +160,9 @@ ll$b
 ```
 
 ## Class
+
 For basic things, class does not change much from vectors:
+
 ```{r}
 class(FALSE)
 class(1)
@@ -170,6 +172,7 @@ typeof(1L)
 ```
 
 But now we can attach multiple classes to the object:
+
 ```{r}
 class(a)
 class(a) <- c("cat")
@@ -177,11 +180,15 @@ class(a) <- c("cat", "dog")
 ```
 
 ## Matrix
+
 Matrices can be defined as:
+
 ```{r}
 m <- matrix(c(1, 2, 3, 4), nrow = 2)
 ```
+
 We can access it properties:
+
 ```{r}
 typeof(m)
 mode(m)
@@ -195,6 +202,7 @@ class(m)
 ```
 
 And we get elements of matrices like:
+
 ```{r}
 dim(m) <- c(2, 2)
 m[,]
@@ -205,6 +213,7 @@ m[1, ]
 ```
 
 And we can use extra argument drop to control if it will drop the elements in output:
+
 ```{r}
 m <- matrix(1:9, nrow = 3)
 m
@@ -225,6 +234,7 @@ class(m)
 ```
 
 We can access the attributes of our objects, for example:
+
 ```{r}
 attributes(m)
 attributes(a)
@@ -235,6 +245,7 @@ attributes(b)$names[2]
 ```
 
 And we can modify the attributes of our objects:
+
 ```{r}
 attr(b, "names") <- c("a", "b")
 
@@ -248,6 +259,7 @@ attr(m, "dim") <- NULL
 ```
 
 Following is an example where we are accessing data frame attributes:
+
 ```{r}
 df <- data.frame(a = 1:4,
              b = c("a", "b","c", "d"),
@@ -273,6 +285,7 @@ df[c("a", "b")]
 ```
 
 And there are logical operators "and" and "or":
+
 ```{r}
 3 < 5 & 2 > 4
 (3 < 5) & (2 > 4)
@@ -283,15 +296,135 @@ c(TRUE, FALSE) & c(TRUE)
 ```
 
 For double operands, we need be careful about the lengths:
+
 ```{r}
 # c(TRUE, FALSE) && c(TRUE, TRUE) will give us error
 TRUE && FALSE
 ```
 
 In this case, we need to use "all" or "any" to clarify:
+
 ```{r}
 all(c(TRUE, TRUE, TRUE))
 all(c(TRUE, FALSE, TRUE))
 any(c(TRUE, TRUE, TRUE))
 any(c(TRUE, FALSE, TRUE))
+```
+
+
+## Statistics
+We can access the quantiles of our datasets:
+```{r}
+n <- 10000
+df <- 3
+dat <- rt(n,df)
+
+save <- vector(length=n)
+for (i in 1:n){
+  save[i] <- dat[i] < -1.96
+}
+
+odat <- dat[order(dat)]
+
+# Now we order our values
+head(dat, n=10)
+head(odat, n=10)
+
+# We have 3 degrees of freedom so we need to use .975*n and .025*n
+odat[round(.975*n)]
+odat[round(.025*n)]
+```
+
+If we generate a new set of data and find the confidence intervals:
+```{r}
+reps <- 15
+n <- 10000
+sims <- rt(reps*n, df=df)
+msim <- matrix(sims, nrow=n)
+
+means <- apply(msim, 2, mean)
+sds <- apply(msim, 2, sd)/sqrt(n)
+
+critical <- abs(qt(.025, 3))  # getting the critical values
+print(critical)
+
+lb <- means - critical*sds
+ub <- means + critical*sds
+
+# Now check the confidence intervals that include 0
+coverage <- lb<0 & ub>0
+mean(coverage)  # We see that it's basically full coverage.
+```
+
+If we prefer working with matrices:
+```{r}
+a <- matrix(1:8, nrow=2)
+
+cat("The original matrix takes form: \n")
+print(a)
+a+1
+cat("We can shift the entire matrix by a+1: \n")
+print(a+1)
+cat("R uses column dominant matrices, it will apply shifts repeatedly columnwise, e.g. c(1,10): \n")
+print(a + c(1,10))
+cat("If we want them to be row dominant, we can take a double transpose: \n")
+print(t(t(a) + c(1,10)))
+```
+
+Let's work on an example:
+```{r}
+n <- 50
+m <- 200
+r <- .5
+y <- rnorm(n)
+xmat <- matrix(rep(y, times=m), nrow=n)
+xmat <- r*xmat + rnorm(n*m, sd=sqrt(1-r^2.))
+
+savedcor <- vector(length=m)
+
+# We can do it with a for loop:
+for (i in 1:m){
+  savedcor[i] = cor(y, xmat[, i])
+}
+mean(savedcor)
+
+# Or we can vectorize by using apply:
+savedcor2=apply(xmat, 2, function(k) cor(y,k))
+mean(savedcor2)  # the results are the same
+
+xm <- colMeans(xmat)
+xsd <- apply(xmat, 2, sd)
+xmat2 <- xmat - matrix(rep(xm, each=n), nrow=n)
+xsd <- apply(xmat2, 2, sd)
+xmat3 <- xmat2/matrix(rep(xsd, each=n), nrow=n)
+y2 <- (y-mean(y))/sd(y)
+
+xm <- colMeans(xmat)
+xmat2 <- t(t(xmat)-xm)
+xsd <- sqrt(colSums(xmat2^2)/(n-1))
+xmat3 <- t(t(xmat2)/xsd)
+y2 <- (y-mean(y))/sd(y)
+savedcor3 <- as.vector(y2 %*% xmat3)/(n-1)
+mean(savedcor3)
+
+print("The results from different methods are the same")
+```
+
+## Function coding
+Following what we had for the statistics section, now we write some function:
+```{r}
+coveragesim <- function(reps, n, df, afunc){
+  sims <- rt(reps*n, df=df)
+  msim <- matrix(sims, nrow=n)
+  means <- apply(msim, 2, mean)
+  sds <- apply(msim, 2, sd)/sqrt(n)
+  critical <- abs(qt(.025, df))
+  lb <- means - critical*sds
+  ub <- means + critical*sds
+  
+  coverage <- lb<0 & ub>0
+  return(mean(coverage))
+}
+coveragesim(reps, n, df)
+
 ```
