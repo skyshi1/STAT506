@@ -7,23 +7,345 @@ format: html
 editor: visual
 ---
 
-## Quarto
+The link to the problem set 1 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet1>, as a sub-folder of the STATS 506 repository.
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
 
-## Running Code
+## Problem 1 - Wine Data
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
+### (a)
 
 ```{r}
-#| echo: false
-2 * 2
+wine_data <- read.table('./wine/wine.data', sep = ',', header = FALSE)
+
+# Set the headers according to the webpage.
+colnames(wine_data) <- c('class',
+                         'Alcohol',
+                         'Malicacid',
+                         'Ash',
+                         'Alcalinity_of_ash',
+                         'Magnesium',
+                         'Total_phenols', 
+                         'Flavanoids',
+                         'Nonflavanoid_phenols',
+                         'Proanthocyanins',
+                         'Color_intensity',
+                         'Hue', 
+                         '0D280_0D315_of_diluted_wines',
+                         'Proline')
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+### (b)
+
+In the "wine.names" document, it says we have 59, 71, and 48 wines within each class. Now we check the "wine.data" file and check if it is consistent.
+
+```{r}
+wine_class_count <- table(wine_data$class)
+print(wine_class_count)
+```
+
+Yes it is consistent.
+
+### (c)
+
+#### 1.
+```{r}
+correlation_all <- cor(wine_data$Alcohol, wine_data$Color_intensity)
+print(correlation_all)
+```
+The correlation between alcohol content and color intensity is 0.546.
+
+#### 2.
+```{r}
+correlation_by_class <- numeric(3)
+
+for (theclass in wine_data$class) {
+  subset <- wine_data[wine_data$class == theclass, ]
+  correlation_by_class[theclass] <- cor(subset$Alcohol, subset$Color_intensity)
+}
+
+print("Correlation for classes 1 2 3 are:")
+print(correlation_by_class)
+
+highest_corr_class <- which.max(correlation_by_class)
+lowest_corr_class <- which.min(correlation_by_class)
+cat("Highest correlation class is:", highest_corr_class, "\n")
+cat("Lowest correlation class is:", lowest_corr_class, "\n")
+
+```
+Class 1 has the highest correlation and class 2 has the lowest correlation.
+
+#### 3.
+
+```{r}
+highest_color_intensity_index <- which.max(wine_data$Color_intensity)
+highest_color_intensity_alcohol <- wine_data$Alcohol[highest_color_intensity_index]
+cat("The alcohol content is:", highest_color_intensity_alcohol, "\n")
+```
+The alcohol content of the wine with the highest color intensity is: 14.34
+
+#### 4.
+
+```{r}
+num_higher_proanthocyanins <- sum(wine_data$Proanthocyanins > wine_data$Ash)
+num_total_wine <- nrow(wine_data)
+percentage_higher_proanthocyanins <- (num_higher_proanthocyanins / num_total_wine) * 100
+cat("The percentage is:", percentage_higher_proanthocyanins, "%\n")
+```
+8.427% of the wines had higher content of proanthocyanins compare to ash.
+
+### (d)
+```{r}
+overall_averages <- colMeans(wine_data[, -1])
+overall_averages_df <- as.data.frame(t(overall_averages))
+rownames(overall_averages_df) <- "Overall"
+
+class_averages <- aggregate(. ~ class, data = wine_data, FUN = mean)
+class_averages_without_class <- class_averages[, -1]
+
+summary_table <- rbind(overall_averages_df, class_averages_without_class)
+rownames(summary_table)[2:4] <- paste("Class", class_averages$class)
+
+cat("Now printing the summary table to visualize it:", "\n")
+print(summary_table)
+```
+Good.
+
+### (e)
+The information about the tests are based on what I Googled, I am not a statistics major but a physics major, so I haven't seen them before (or maybe I forgot).
+```{r}
+#' Perform manual two-sample t-Test
+#'
+#' This function calculates the t-statistic and p-value for a two-sample t-test 
+#' It is designed to test whether there is a significant difference in means between two independent samples.
+#'
+#' @param group1 A numeric vector representing the first sample.
+#' @param group2 A numeric vector representing the second sample.
+#' @return A list containing the t-statistic and the p-value for the test.
+#' @examples
+#' # Example usage:
+#' group1 <- c(1, 2, 3, 4)
+#' group2 <- c(4, 3, 2, 1)
+#' manual_t_test(group1, group2)
+
+manual_t_test <- function(group1, group2) {
+  # Calculate means
+  mean1 <- mean(group1)
+  mean2 <- mean(group2)
+  
+  # Calculate variances
+  var1 <- var(group1)
+  var2 <- var(group2)
+  
+  # Calculate sample sizes
+  n1 <- length(group1)
+  n2 <- length(group2)
+  
+  # Calculate the t-statistic
+  t_stat <- (mean1 - mean2) / sqrt((var1/n1) + (var2/n2))
+  
+  # Calculate the  p-value
+  df <- ((var1/n1 + var2/n2)^2) / (((var1/n1)^2 / (n1 - 1)) + ((var2/n2)^2 / (n2 - 1)))
+  p_value <- 2 * (1 - pt(abs(t_stat), df))
+  
+  # Return the t-statistic and p-value
+  return(list(t_statistic = t_stat, p_value = p_value))
+}
+
+class1_phenols <- wine_data$Total_phenols[wine_data$class == 1]
+class2_phenols <- wine_data$Total_phenols[wine_data$class == 2]
+class3_phenols <- wine_data$Total_phenols[wine_data$class == 3]
+t_test_1_vs_2 <- manual_t_test(class1_phenols, class2_phenols)
+t_test_1_vs_3 <- manual_t_test(class1_phenols, class3_phenols)
+t_test_2_vs_3 <- manual_t_test(class2_phenols, class3_phenols)
+
+cat("T-test between Class 1 and Class 2:\n")
+print(t_test_1_vs_2)
+
+cat("\nT-test between Class 1 and Class 3:\n")
+print(t_test_1_vs_3)
+
+cat("\nT-test between Class 2 and Class 3:\n")
+print(t_test_2_vs_3)
+```
+All of the p-values are very small, which contradicts the null hypothesis of having no difference in means. Therefore, we may say that the mean total phenols differ significantly between each pair of wine classes.
+
+
+## Problem 2 - AskAManager.org Data
+
+### (a)
+```{r}
+askamanager_data <- read.csv('AskAManager.csv')
+```
+Now the data is imported.
+
+### (b)
+```{r}
+ask_a_manager_data <- read.csv('AskAManager.csv')
+
+# Simplify column names
+colnames(ask_a_manager_data) <- c(
+  'id',
+  'timestamp',
+  'age',
+  'industry',
+  'job_title',
+  'job_context',
+  'annual_salary',
+  'additional_salary',
+  'currency',
+  'other_currency',
+  'income_context',
+  'country',
+  'us_state',
+  'city',
+  'overall_experience',
+  'field_experience',
+  'education',
+  'gender',
+  'race'
+)
+
+print(head(ask_a_manager_data))
+```
+Now the titles are simplified, with printed headers as checks.
+
+### (c)
+```{r}
+num_before <- nrow(ask_a_manager_data)
+
+ask_a_manager_data_usd <- ask_a_manager_data[ask_a_manager_data$currency =="USD", ]
+num_after <- nrow(ask_a_manager_data_usd)
+
+cat("Number before filtering for USD:", num_before, "\n")
+cat("Number after filtering for USD:", num_after, "\n")
+```
+
+### (d)
+```{r}
+ask_a_manager_data_age <- ask_a_manager_data_usd
+
+ask_a_manager_data_age$age <- as.numeric(as.character(factor(ask_a_manager_data_usd$age, 
+                                    levels = c("under 18", "18-24", "25-34", "35-44", "45-54", "55-64", "65 or over"),
+                                    labels = c(0, 18, 25, 35, 45, 55, 65))))
+
+ask_a_manager_data_age$overall_experience <- as.numeric(as.character(factor(ask_a_manager_data_usd$overall_experience, 
+                                                      levels = c("1 year or less", "2 - 4 years", "5-7 years", 
+                                                                 "8 - 10 years", "11 - 20 years", "21 - 30 years", 
+                                                                 "31 - 40 years", "41 years or more"),
+                                                      labels = c(1, 2, 5, 8, 11, 21, 31, 41))))
+
+ask_a_manager_data_age$field_experience <- as.numeric(as.character(factor(ask_a_manager_data_usd$field_experience, 
+                                                    levels = c("1 year or less", "2 - 4 years", "5-7 years", 
+                                                               "8 - 10 years", "11 - 20 years", "21 - 30 years", 
+                                                               "31 - 40 years", "41 years or more"),
+                                                    labels = c(1, 2, 5, 8, 11, 21, 31, 41))))
+
+num_before <- nrow(ask_a_manager_data_age)
+
+ask_a_manager_data_age <- ask_a_manager_data_age[
+  ask_a_manager_data_age$age >= 18 &  # age need to be larger than 18
+  ask_a_manager_data_age$overall_experience <= (ask_a_manager_data_age$age - 18) &  # should not start working before 18
+  ask_a_manager_data_age$field_experience <= ask_a_manager_data_age$overall_experience,  # Field experience should be shorter than overall experience
+]
+
+num_after <- nrow(ask_a_manager_data_age)
+
+cat("Number before filtering for impossible ages:", num_before, "\n")
+cat("Number after filtering for impossible ages:", num_after, "\n")
+```
+
+### (e)
+I will plot the salary distribution first:
+```{r}
+hist(ask_a_manager_data_age$annual_salary, 
+     main = "Distribution of Annual Salaries",
+     xlab = "Annual Salary",
+     ylab = "Frequency",
+     col = "lightblue", 
+     border = "blue",
+     xlim = c(0, 1000000),
+     breaks = 200 
+)
+```
+It is a skewed distribution, I decide to cut off the top 10% in the salaries and the bottom 10% in the salaries as extrema.
+```{r}
+ask_a_manager_data_filtered <- ask_a_manager_data_age
+
+lower_cutoff <- quantile(ask_a_manager_data_filtered$annual_salary, 0.10)
+upper_cutoff <- quantile(ask_a_manager_data_filtered$annual_salary, 0.90)
+
+num_before <- nrow(ask_a_manager_data_filtered)
+
+ask_a_manager_data_filtered <- ask_a_manager_data_filtered[
+  ask_a_manager_data_filtered$annual_salary >= lower_cutoff & 
+  ask_a_manager_data_filtered$annual_salary <= upper_cutoff, 
+]
+
+num_after <- nrow(ask_a_manager_data_filtered)
+
+cat("Number of observations before filtering salary:", num_before, "\n")
+cat("Number of observations after filtering salary:", num_after, "\n")
+cat("Lower cutoff:", lower_cutoff, "\n")
+cat("Upper cutoff:", upper_cutoff, "\n")
+
+```
+Now the final sample size is 12798.
+
+## Problem 3 - Palindromic Numbers
+
+### (a)
+```{r}
+#' Check if a number is palindromic
+#'
+#' This function checks if a given positive integer is a palindrome.
+#'
+#' @param n A positive integer to check.
+#' @return A list with two elements: 
+#'   - `isPalindromic`: A logical value indicating if the input is palindromic.
+#'   - `reversed`: The input number with its digits reversed.
+#' @examples
+#' isPalindromic(728827)
+#' isPalindromic(39951)
+isPalindromic <- function(n) {
+  n_str <- as.character(n)
+  n_reversed <- paste(rev(strsplit(n_str, "")[[1]]), collapse = "")
+  is_palindromic <- n_str == n_reversed
+  return(list(isPalindromic = is_palindromic, reversed = as.integer(n_reversed)))
+}
+isPalindromic(728827)
+isPalindromic(39951)
+```
+The tested results are the same as in the problem set prompt.
+
+### (b)
+```{r}
+#' Find the next palindromic number
+#'
+#' This function finds the next palindromic number that is greater than the input.
+#'
+#' @param n A positive integer input.
+#' @return A single integer representing the next palindromic number greater than the input.
+#' @examples
+#' nextPalindrome(7152)
+#' nextPalindrome(765431537)
+nextPalindrome <- function(n) {
+  next_number <- n + 1
+  while (!isPalindromic(next_number)$isPalindromic) {
+    next_number <- next_number + 1
+  }
+  return(next_number)
+}
+nextPalindrome(7152)
+nextPalindrome(765431537)
+```
+The tested results are the same as in the problem set prompt.
+
+### (c)
+```{r}
+test_numbers <- c(391, 9928, 19272719, 109, 2)
+
+next_palindromes <- sapply(test_numbers, nextPalindrome)
+
+cat("Next palindromic numbers for the numbers given are:\n")
+print(next_palindromes)
+```

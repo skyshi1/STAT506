@@ -1,0 +1,297 @@
+---
+title: "Lecture Notes"
+format: html
+author: "Sky Shi"
+date-modified: today
+editor: visual
+---
+
+## Importing files into R
+
+To read files, we can:
+
+```{r}
+# read.table('name')
+```
+
+And to write files, we can:
+
+```{r}
+# write.csv(data, 'name')
+```
+
+## Vectors
+
+There are types of objects, for example, if we use:
+
+```{r}
+a <- c(2,3)
+```
+
+It has some length and some type:
+
+```{r}
+length(a)
+typeof(a)
+```
+
+And it has something called mode, in this case it is numeric since they are just numbers. We generally will just use "typeof":
+
+```{r}
+mode(a)
+```
+
+Vectors have one type of data only, for example:
+
+```{r}
+c(1, "a")
+```
+
+We see that is will convert 1 into a string automatically.
+
+There are some special types of numbers, for example:
+
+```{r}
+Inf
+typeof(Inf)
+Inf > 5
+-Inf < .5
+
+NaN
+typeof(NaN)
+
+NA
+typeof(NA)
+c(1,2,Inf,NaN,NA,TRUE,FALSE)
+```
+
+We see that NaN and NA are special types that won't be changed into a number.
+
+We can also have null vectors, for example we write:
+
+```{r}
+nullvec <- c()
+length(nullvec)
+typeof(nullvec)
+```
+
+And we can create long vectors by, for example:
+
+```{r}
+b <- vector("character", length=10)
+typeof(b)
+length(b)
+```
+
+We need to be careful that R counts from 1, for example:
+
+```{r}
+v <- c(1,2,3,4,5)
+v[2]
+```
+
+We can also drop elements using square brackets:
+
+```{r}
+v[1:3]
+```
+
+We can also have logical to vectors, for example:
+
+```{r}
+v[c(TRUE,FALSE,TRUE,TRUE,FALSE)]
+```
+
+A list, however, can contain different types of data, for example:
+
+```{r}
+l <-list(1, "a")
+length(l)
+typeof(l)
+sapply(l, typeof)
+```
+
+We see that the type of l will be a list instead of the type of its elements. We need to access each of its elements by "sapply". And if we want to extract quantities, we need to:
+
+```{r}
+l <- list(c(1, 2), c("a", "b", "c"))
+l
+#(l[2])[[3]] will give us out of bounds error
+(l[[2]])[3]
+
+sapply(l, length)
+length(l[[1]])
+length(l[[2]])
+```
+
+Sometimes it might be more convenient to define arguments with names, and we can change them:
+
+```{r}
+a <- c(1, 2, 3)
+a[2]
+
+b <- c("first" = 1, "second" = 2)
+b
+b["first"]
+names(b)
+names(b) <- c("uno", "dos")
+b
+names(b)[1] <- "abc"
+b
+d <- c("a", "b")
+d[1] <- "efg"
+d
+```
+
+And these definitions doesn't need to be formal:
+
+```{r}
+c(first = 1)
+# c(first var = 1) will give us error
+c("first var" = 1)
+c("7389&*$(&*$&(&*$@!(*&$@(!" = 1)
+```
+
+And we can use \$ sign to pull things out by name:
+
+```{r}
+ll <- list(a = 1, b = 2)
+ll$b
+```
+
+## Class
+For basic things, class does not change much from vectors:
+```{r}
+class(FALSE)
+class(1)
+class(4L)
+typeof(1)
+typeof(1L)
+```
+
+But now we can attach multiple classes to the object:
+```{r}
+class(a)
+class(a) <- c("cat")
+class(a) <- c("cat", "dog")
+```
+
+## Matrix
+Matrices can be defined as:
+```{r}
+m <- matrix(c(1, 2, 3, 4), nrow = 2)
+```
+We can access it properties:
+```{r}
+typeof(m)
+mode(m)
+class(m)
+length(m)
+dim(m)
+dim(m) <- c(1, 4)
+m
+# dim(m) <- c(3, 2) will give us error because it's outside the matrix size
+class(m)
+```
+
+And we get elements of matrices like:
+```{r}
+dim(m) <- c(2, 2)
+m[,]
+m[1, 1]
+m[1:2, 1]
+m[1, 1:2]
+m[1, ]
+```
+
+And we can use extra argument drop to control if it will drop the elements in output:
+```{r}
+m <- matrix(1:9, nrow = 3)
+m
+m[1:2, 1:2]
+m[1, 1:2]
+m[1,]
+m[, 1, drop = FALSE]
+m[, 1, drop = TRUE]
+`[`(m, 1, 1)
+m[1, 1]
+
+m[1, , drop = FALSE]
+m[4]
+
+dim(m) <- c(1, 1, 9)
+m
+class(m)
+```
+
+We can access the attributes of our objects, for example:
+```{r}
+attributes(m)
+attributes(a)
+attributes(b)
+
+class(attributes(b))
+attributes(b)$names[2]
+```
+
+And we can modify the attributes of our objects:
+```{r}
+attr(b, "names") <- c("a", "b")
+
+
+attr(b, "animal") <- "cat"
+attributes(b)
+attr(b, "animal") <- NULL
+attributes(b)
+attr(b, "names") <- NULL
+attr(m, "dim") <- NULL
+```
+
+Following is an example where we are accessing data frame attributes:
+```{r}
+df <- data.frame(a = 1:4,
+             b = c("a", "b","c", "d"),
+             c = c(TRUE, TRUE, NA, NA))
+df[,2]
+df[,1]
+df[,3]
+df$a
+df$b
+df$c
+
+attributes(df)
+attr(df, "dim")
+class(df)
+class(df) <- "list"
+
+df$a
+df["a"]
+df[c("a", "b")]
+
+# df[1,] is out of range
+# df[, -2] is out of rang
+```
+
+And there are logical operators "and" and "or":
+```{r}
+3 < 5 & 2 > 4
+(3 < 5) & (2 > 4)
+(3 < 5) | (2 > 4)
+
+c(TRUE, FALSE) & c(TRUE, TRUE)
+c(TRUE, FALSE) & c(TRUE)
+```
+
+For double operands, we need be careful about the lengths:
+```{r}
+# c(TRUE, FALSE) && c(TRUE, TRUE) will give us error
+TRUE && FALSE
+```
+
+In this case, we need to use "all" or "any" to clarify:
+```{r}
+all(c(TRUE, TRUE, TRUE))
+all(c(TRUE, FALSE, TRUE))
+any(c(TRUE, TRUE, TRUE))
+any(c(TRUE, FALSE, TRUE))
+```
