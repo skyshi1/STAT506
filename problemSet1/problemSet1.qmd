@@ -3,12 +3,16 @@ title: "STATS 506"
 subtitle: "Problem Set 1"
 author: "Sky Shi"
 date-modified: today
-format: html
+format:
+  html:
+    css: style.css
+    toc: true
+    toc-depth: 5
+    toc-expand: 2
 editor: visual
 ---
 
 The link to the problem set 1 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet1>, as a sub-folder of the STATS 506 repository.
-
 
 ## Problem 1 - Wine Data
 
@@ -48,13 +52,16 @@ Yes it is consistent.
 ### (c)
 
 #### 1.
+
 ```{r}
 correlation_all <- cor(wine_data$Alcohol, wine_data$Color_intensity)
 print(correlation_all)
 ```
+
 The correlation between alcohol content and color intensity is 0.546.
 
 #### 2.
+
 ```{r}
 correlation_by_class <- numeric(3)
 
@@ -72,6 +79,7 @@ cat("Highest correlation class is:", highest_corr_class, "\n")
 cat("Lowest correlation class is:", lowest_corr_class, "\n")
 
 ```
+
 Class 1 has the highest correlation and class 2 has the lowest correlation.
 
 #### 3.
@@ -81,6 +89,7 @@ highest_color_intensity_index <- which.max(wine_data$Color_intensity)
 highest_color_intensity_alcohol <- wine_data$Alcohol[highest_color_intensity_index]
 cat("The alcohol content is:", highest_color_intensity_alcohol, "\n")
 ```
+
 The alcohol content of the wine with the highest color intensity is: 14.34
 
 #### 4.
@@ -91,9 +100,11 @@ num_total_wine <- nrow(wine_data)
 percentage_higher_proanthocyanins <- (num_higher_proanthocyanins / num_total_wine) * 100
 cat("The percentage is:", percentage_higher_proanthocyanins, "%\n")
 ```
+
 8.427% of the wines had higher content of proanthocyanins compare to ash.
 
 ### (d)
+
 ```{r}
 overall_averages <- colMeans(wine_data[, -1])
 overall_averages_df <- as.data.frame(t(overall_averages))
@@ -108,10 +119,13 @@ rownames(summary_table)[2:4] <- paste("Class", class_averages$class)
 cat("Now printing the summary table to visualize it:", "\n")
 print(summary_table)
 ```
+
 Good.
 
 ### (e)
+
 The information about the tests are based on what I Googled, I am not a statistics major but a physics major, so I haven't seen them before (or maybe I forgot).
+
 ```{r}
 #' Perform manual two-sample t-Test
 #'
@@ -167,18 +181,21 @@ print(t_test_1_vs_3)
 cat("\nT-test between Class 2 and Class 3:\n")
 print(t_test_2_vs_3)
 ```
-All of the p-values are very small, which contradicts the null hypothesis of having no difference in means. Therefore, we may say that the mean total phenols differ significantly between each pair of wine classes.
 
+All of the p-values are very small, which contradicts the null hypothesis of having no difference in means. Therefore, we may say that the mean total phenols differ significantly between each pair of wine classes.
 
 ## Problem 2 - AskAManager.org Data
 
 ### (a)
+
 ```{r}
 askamanager_data <- read.csv('AskAManager.csv')
 ```
+
 Now the data is imported.
 
 ### (b)
+
 ```{r}
 ask_a_manager_data <- read.csv('AskAManager.csv')
 
@@ -207,9 +224,11 @@ colnames(ask_a_manager_data) <- c(
 
 print(head(ask_a_manager_data))
 ```
+
 Now the titles are simplified, with printed headers as checks.
 
 ### (c)
+
 ```{r}
 num_before <- nrow(ask_a_manager_data)
 
@@ -221,6 +240,7 @@ cat("Number after filtering for USD:", num_after, "\n")
 ```
 
 ### (d)
+
 ```{r}
 ask_a_manager_data_age <- ask_a_manager_data_usd
 
@@ -255,7 +275,9 @@ cat("Number after filtering for impossible ages:", num_after, "\n")
 ```
 
 ### (e)
+
 I will plot the salary distribution first:
+
 ```{r}
 hist(ask_a_manager_data_age$annual_salary, 
      main = "Distribution of Annual Salaries",
@@ -267,7 +289,9 @@ hist(ask_a_manager_data_age$annual_salary,
      breaks = 200 
 )
 ```
+
 It is a skewed distribution, I decide to cut off the top 10% in the salaries and the bottom 10% in the salaries as extrema.
+
 ```{r}
 ask_a_manager_data_filtered <- ask_a_manager_data_age
 
@@ -289,11 +313,13 @@ cat("Lower cutoff:", lower_cutoff, "\n")
 cat("Upper cutoff:", upper_cutoff, "\n")
 
 ```
+
 Now the final sample size is 12798.
 
 ## Problem 3 - Palindromic Numbers
 
 ### (a)
+
 ```{r}
 #' Check if a number is palindromic
 #'
@@ -315,9 +341,11 @@ isPalindromic <- function(n) {
 isPalindromic(728827)
 isPalindromic(39951)
 ```
+
 The tested results are the same as in the problem set prompt.
 
 ### (b)
+
 ```{r}
 #' Find the next palindromic number
 #'
@@ -338,9 +366,11 @@ nextPalindrome <- function(n) {
 nextPalindrome(7152)
 nextPalindrome(765431537)
 ```
+
 The tested results are the same as in the problem set prompt.
 
 ### (c)
+
 ```{r}
 test_numbers <- c(391, 9928, 19272719, 109, 2)
 
