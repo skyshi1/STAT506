@@ -3271,15 +3271,15 @@ window.Quarto = {
 </div>
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Vectorized Version: &quot;</span>, <span class="fu">play_dice_vectorized</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Vectorized Version:  -6 </code></pre>
+<pre><code>Vectorized Version:  4 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Table Version: &quot;</span>, <span class="fu">play_dice_table</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Table Version:  4 </code></pre>
+<pre><code>Table Version:  10 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Apply Version: &quot;</span>, <span class="fu">play_dice_apply</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Apply Version:  0 </code></pre>
+<pre><code>Apply Version:  6 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test again</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Again, results for n = 3</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -3289,15 +3289,15 @@ Again, results for n = 3</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Loop Version: &quot;</span>, <span class="fu">play_dice_loop</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Loop Version:  -6 </code></pre>
+<pre><code>Loop Version:  6 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Vectorized Version: &quot;</span>, <span class="fu">play_dice_vectorized</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Vectorized Version:  -6 </code></pre>
+<pre><code>Vectorized Version:  0 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Table Version: &quot;</span>, <span class="fu">play_dice_table</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Table Version:  -6 </code></pre>
+<pre><code>Table Version:  0 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Apply Version: &quot;</span>, <span class="fu">play_dice_apply</span>(<span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -3311,19 +3311,19 @@ Results for n = 3000</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Loop Version: &quot;</span>, <span class="fu">play_dice_loop</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Loop Version:  1790 </code></pre>
+<pre><code>Loop Version:  2134 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Vectorized Version: &quot;</span>, <span class="fu">play_dice_vectorized</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Vectorized Version:  1992 </code></pre>
+<pre><code>Vectorized Version:  1488 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Table Version: &quot;</span>, <span class="fu">play_dice_table</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Table Version:  1652 </code></pre>
+<pre><code>Table Version:  1746 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Apply Version: &quot;</span>, <span class="fu">play_dice_apply</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Apply Version:  1928 </code></pre>
+<pre><code>Apply Version:  1988 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test again</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Again, results for n = 3000</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -3333,19 +3333,19 @@ Again, results for n = 3000</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Loop Version: &quot;</span>, <span class="fu">play_dice_loop</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Loop Version:  1816 </code></pre>
+<pre><code>Loop Version:  1740 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Vectorized Version: &quot;</span>, <span class="fu">play_dice_vectorized</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Vectorized Version:  1824 </code></pre>
+<pre><code>Vectorized Version:  2102 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Table Version: &quot;</span>, <span class="fu">play_dice_table</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Table Version:  1608 </code></pre>
+<pre><code>Table Version:  1966 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Apply Version: &quot;</span>, <span class="fu">play_dice_apply</span>(<span class="dv">3000</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Apply Version:  2154 </code></pre>
+<pre><code>Apply Version:  1914 </code></pre>
 </div>
 </div>
 <p>So our functions are working.</p>
@@ -3496,11 +3496,11 @@ Again, results for n = 3000</code></pre>
 <span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(benchmark_1000)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Unit: microseconds
-       expr      min       lq       mean    median       uq       max neval
-       loop 3406.101 3570.400 3968.65553 3663.9505 3916.052 31159.702  1000
- vectorized   75.201   84.201   95.50989   87.8015   96.301   289.601  1000
-      table  182.701  198.301  226.75860  207.6515  229.701   973.101  1000
-      apply  556.901  585.801  645.43611  596.0005  630.001  2754.202  1000</code></pre>
+       expr      min        lq       mean    median        uq       max neval
+       loop 3434.001 3602.9015 3980.50301 3699.2505 3949.7520 31997.001  1000
+ vectorized   76.301   84.0020   96.19459   87.9000   98.3510   448.801  1000
+      table  184.201  197.6505  227.46020  207.2010  230.8005  2235.901  1000
+      apply  567.002  587.7015  649.54879  601.4505  641.4510  3188.501  1000</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test performance with input size 100,000</span></span>
 <span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>benchmark_100000 <span class="ot">&lt;-</span> <span class="fu">microbenchmark</span>(</span>
@@ -3516,10 +3516,10 @@ Again, results for n = 3000</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>Unit: milliseconds
        expr        min         lq       mean     median         uq        max
-       loop 380.917100 385.800401 398.666851 399.095151 403.056101 420.998700
- vectorized   7.164301   7.339002   7.902311   7.896701   8.239001   9.325901
-      table   8.211501   8.908001   9.619321   9.127151   9.400601  13.048801
-      apply  62.858301  65.798901  71.238001  67.782951  74.402302  92.788301
+       loop 393.858401 404.317401 427.829481 415.428300 444.318001 495.299701
+ vectorized   7.355600   7.508002   8.284151   8.317901   8.941401   9.064101
+      table   8.547701   9.521501   9.783721   9.738751  10.334302  11.085001
+      apply  68.056000  69.910701  77.340041  73.759251  81.545401 100.065900
  neval
     10
     10
@@ -3746,15 +3746,13 @@ F-statistic: 982.1 on 6 and 4584 DF,  p-value: &lt; 2.2e-16</code></pre>
 <h3 class="anchored" data-anchor-id="e-refit-the-model">(e) Refit the model</h3>
 <p>Find a good year first:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>gasoline_cars<span class="sc">$</span>Year <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(gasoline_cars<span class="sc">$</span>Year)</span>
-<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a bar plot of the distribution of Year to examine it.</span></span>
-<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">table</span>(gasoline_cars<span class="sc">$</span>Year), </span>
-<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">&quot;Distribution of Cars by Year&quot;</span>, </span>
-<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab =</span> <span class="st">&quot;Year&quot;</span>, </span>
-<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">ylab =</span> <span class="st">&quot;Number of Cars&quot;</span>, </span>
-<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">col =</span> <span class="st">&quot;lightblue&quot;</span>, </span>
-<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">border =</span> <span class="st">&quot;black&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a bar plot of the distribution of Year to examine it.</span></span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">table</span>(gasoline_cars<span class="sc">$</span>Year), </span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">&quot;Distribution of Cars by Year&quot;</span>, </span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab =</span> <span class="st">&quot;Year&quot;</span>, </span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">ylab =</span> <span class="st">&quot;Number of Cars&quot;</span>, </span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">col =</span> <span class="st">&quot;lightblue&quot;</span>, </span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">border =</span> <span class="st">&quot;black&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -3840,15 +3838,13 @@ F-statistic: 982.1 on 6 and 4584 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(beta_manual)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                     [,1]
-(Intercept)  3.506922e+00
-Torque      -2.294331e-03
-Horsepower   9.238126e-04
-Height       4.049897e-04
-Length       3.475207e-05
-Width       -8.722295e-05
-Year2010    -2.181247e-02
-Year2011    -2.430359e-03
-Year2012     4.011528e-02</code></pre>
+(Intercept) -5.339592e+01
+Torque      -2.305897e-03
+Horsepower   9.328547e-04
+Height       4.019629e-04
+Length       2.989852e-05
+Width       -9.177856e-05
+Year         2.829937e-02</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare with the lm() coefficients</span></span>
 <span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>beta_lm_log <span class="ot">&lt;-</span> <span class="fu">coef</span>(model_log)</span>

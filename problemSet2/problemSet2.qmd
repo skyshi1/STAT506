@@ -373,7 +373,6 @@ As a conclusion, from this linear regression model with **log-transformed Highwa
 ### (e) Refit the model
 Find a good year first:
 ```{r}
-gasoline_cars$Year <- as.factor(gasoline_cars$Year)
 
 # Create a bar plot of the distribution of Year to examine it.
 barplot(table(gasoline_cars$Year), 
