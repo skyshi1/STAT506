@@ -15,6 +15,440 @@ editor: visual
 
 The link to the problem set 2 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet2>, as a sub-folder of the STATS 506 repository.
 
-## Problem 1 - Wine Data
+## Problem 1 - Dice Game
 
-### (a)
+### (a) Dice game with different methods
+
+#### Version 1: Implement this game using a loop.
+
+```{r}
+#' Play the dice game using a loop.
+#'
+#' @param n Number of dice to roll
+#' @return Total winnings from rolling `n` dice
+play_dice_loop <- function(n) {
+  winnings <- 0
+  for (i in 1:n) {
+    roll <- sample(1:6, 1)  # Roll a die
+    if (roll == 3 || roll == 5) {
+      winnings <- winnings + (2 * roll - 2)  # Win 2*roll-2 if roll 3 or 5
+    } else {
+      winnings <- winnings - 2  # Lose $2 on other rolls
+    }
+  }
+  return(winnings)
+}
+```
+
+#### Version 2: Implement this game using built-in R vectorized functions.
+
+```{r}
+#' Play the dice game using built-in R vectorized functions.
+#'
+#' @param n Number of dice to roll
+#' @return Total winnings from rolling `n` dice
+play_dice_vectorized <- function(n) {
+  rolls <- sample(1:6, n, replace = TRUE)  # Vector of rolls
+  winnings <- ifelse(rolls == 3 | rolls == 5, 2 * rolls - 2, -2)
+  return(sum(winnings))  # Total winnings
+}
+```
+
+#### Version 3: Implement this by rolling all the dice into one and collapsing the die rolls into a single table().
+
+```{r}
+#' Play the dice game using table to count rolls.
+#'
+#' @param n Number of dice to roll
+#' @return Total winnings from rolling `n` dice
+play_dice_table <- function(n) {
+  rolls <- sample(1:6, n, replace = TRUE)
+  roll_table <- table(rolls)  # Create a table of roll counts
+  winnings <- 0
+  
+  if ("3" %in% names(roll_table)) winnings <- winnings + roll_table["3"] * (6 - 2)  # Win 6-2 if roll 3
+  if ("5" %in% names(roll_table)) winnings <- winnings + roll_table["5"] * (10 - 2)  # Win 10-2 if roll 5
+  losses <- n - sum(roll_table[names(roll_table) == "3" | names(roll_table) == "5"])
+  winnings <- winnings - losses * 2  # Lose 2 for other rolls
+  
+  return(winnings)
+}
+```
+
+#### Version 4: Implement this game by using one of the “apply” functions.
+
+```{r}
+#' Play the dice game using sapply,
+#'
+#' @param n Number of dice to roll
+#' @return Total winnings from rolling `n` dice
+play_dice_apply <- function(n) {
+  rolls <- sample(1:6, n, replace = TRUE)
+  winnings <- sapply(rolls, function(roll) {
+    if (roll == 3 || roll == 5) {
+      return(2 * roll - 2)  # Win 2*roll-2 if roll 3 or 5
+    } else {
+      return(-2)  # Lose 2 for other rolls
+    }
+  })
+  return(sum(winnings))
+}
+```
+
+### (b) Demonstrate all versions work
+
+```{r}
+# Test each version with input 3
+cat("Results for n = 3\n")
+cat("Loop Version: ", play_dice_loop(3), "\n")
+cat("Vectorized Version: ", play_dice_vectorized(3), "\n")
+cat("Table Version: ", play_dice_table(3), "\n")
+cat("Apply Version: ", play_dice_apply(3), "\n")
+
+# Test again
+cat("\nAgain, results for n = 3\n")
+cat("Loop Version: ", play_dice_loop(3), "\n")
+cat("Vectorized Version: ", play_dice_vectorized(3), "\n")
+cat("Table Version: ", play_dice_table(3), "\n")
+cat("Apply Version: ", play_dice_apply(3), "\n")
+
+# Test each version with input 3,000
+cat("\nResults for n = 3000\n")
+cat("Loop Version: ", play_dice_loop(3000), "\n")
+cat("Vectorized Version: ", play_dice_vectorized(3000), "\n")
+cat("Table Version: ", play_dice_table(3000), "\n")
+cat("Apply Version: ", play_dice_apply(3000), "\n")
+
+# Test again
+cat("\nAgain, results for n = 3000\n")
+cat("Loop Version: ", play_dice_loop(3000), "\n")
+cat("Vectorized Version: ", play_dice_vectorized(3000), "\n")
+cat("Table Version: ", play_dice_table(3000), "\n")
+cat("Apply Version: ", play_dice_apply(3000), "\n")
+```
+So our functions are working.
+
+### (c) Demonstrate that the four versions give the same result
+
+```{r}
+# Check n=3 with seed 0.
+cat("Results for n = 3 (with seed 0)\n")
+set.seed(0)
+result_loop_3 <- play_dice_loop(3)
+set.seed(0)
+result_vectorized_3 <- play_dice_vectorized(3)
+set.seed(0)
+result_table_3 <- play_dice_table(3)
+set.seed(0)
+result_apply_3 <- play_dice_apply(3)
+
+cat("Loop Version: ", result_loop_3, "\n")
+cat("Vectorized Version: ", result_vectorized_3, "\n")
+cat("Table Version: ", result_table_3, "\n")
+cat("Apply Version: ", result_apply_3, "\n\n")
+
+# Check n=3 with seed 111.
+cat("Results for n = 3 (with seed 111)\n")
+set.seed(111)
+result_loop_3 <- play_dice_loop(3)
+set.seed(111)
+result_vectorized_3 <- play_dice_vectorized(3)
+set.seed(111)
+result_table_3 <- play_dice_table(3)
+set.seed(111)
+result_apply_3 <- play_dice_apply(3)
+
+cat("Loop Version: ", result_loop_3, "\n")
+cat("Vectorized Version: ", result_vectorized_3, "\n")
+cat("Table Version: ", result_table_3, "\n")
+cat("Apply Version: ", result_apply_3, "\n\n")
+
+# Check n=3000 with seed 0.
+cat("Results for n = 3000 (with seed 0)\n")
+set.seed(0)
+result_loop_3000 <- play_dice_loop(3000)
+set.seed(0)
+result_vectorized_3000 <- play_dice_vectorized(3000)
+set.seed(0)
+result_table_3000 <- play_dice_table(3000)
+set.seed(0)
+result_apply_3000 <- play_dice_apply(3000)
+
+cat("Loop Version: ", result_loop_3000, "\n")
+cat("Vectorized Version: ", result_vectorized_3000, "\n")
+cat("Table Version: ", result_table_3000, "\n")
+cat("Apply Version: ", result_apply_3000, "\n\n")
+
+# Check n=3000 with seed 111.
+cat("Results for n = 3000 (with seed 111)\n")
+set.seed(111)
+result_loop_3000 <- play_dice_loop(3000)
+set.seed(111)
+result_vectorized_3000 <- play_dice_vectorized(3000)
+set.seed(111)
+result_table_3000 <- play_dice_table(3000)
+set.seed(111)
+result_apply_3000 <- play_dice_apply(3000)
+
+# Print results for n = 3000
+cat("Loop Version: ", result_loop_3000, "\n")
+cat("Vectorized Version: ", result_vectorized_3000, "\n")
+cat("Table Version: ", result_table_3000, "\n")
+cat("Apply Version: ", result_apply_3000, "\n")
+```
+
+We have checked the consistency of all the methods with 2 different seeds and 2 different n's. We see that all methods provide the same result with the same randomizing seed.
+
+### (d) Use the microbenchmark package to clearly demonstrate the speed of the implementations
+
+```{r}
+# Load the microbenchmark package
+library(microbenchmark)
+
+# Test performance with input size 1,000
+benchmark_1000 <- microbenchmark(
+  loop = play_dice_loop(1000),
+  vectorized = play_dice_vectorized(1000),
+  table = play_dice_table(1000),
+  apply = play_dice_apply(1000),
+  times = 1000  # Repeat the test 1000 times for better accuracy, so 1,000,000 in total
+)
+
+# Print results for n = 1,000
+print(benchmark_1000)
+
+# Test performance with input size 100,000
+benchmark_100000 <- microbenchmark(
+  loop = play_dice_loop(100000),
+  vectorized = play_dice_vectorized(100000),
+  table = play_dice_table(100000),
+  apply = play_dice_apply(100000),
+  times = 10  # Repeat the test 10 times for better accuracy, so 1,000,000 in total
+)
+
+# Print results for n = 100,000
+print(benchmark_100000)
+```
+
+The following discussions are drawn from one of the runs, the exact values might change since I am re-running all the codes frequently, but the overall behaviors shouldn't change.
+
+Input Size: 1,000 Rolls:
+
+-   **Loop Version**: The slowest method, with a median time of 4663.50 us. Loops in R are not efficient.
+-   **Vectorized Version**: The fastest method, with a median time of 90.70 us. R’s vectorized operations are optimized.
+-   **Table Version**: Slower than vectorized, with a median time of 222.50 us. The `table()` function introduces less efficiency
+-   **Apply Version**: Slower than vectorized, with a median time of 623.55 us, might because `apply()` is iterative.
+
+Input Size: 100,000 Rolls
+
+-   **Loop Version**: Still the slowest method, with a median time of 508.55445 ms.
+-   **Vectorized Version**: Remains the fastest, with a median time of 7.67195 ms
+-   **Table Version**: Close to vectorized with a median time of 8.12705 ms, this is a large improvement, this suggests that the efficiency of `table()` is better for larger inputs.
+-   **Apply Version**: Improved performance with larger input but still slower, with a median time of 70.74075 ms.
+
+Conclusion: The **vectorized approach** is the most efficient for both input sizes. The **table approach** performance shows significant improvement for large inputs, while the **apply approach** shows moderate improvement. The **loop version** is always the least efficient.
+
+### (e) Fair game?
+
+```{r}
+trials <- 1000000
+n <- 1
+
+# Run Monte Carlo simulation using the vectorized version
+results <- replicate(trials, play_dice_vectorized(n))
+
+# Calculate the expected average winnings
+expected_winnings <- mean(results)
+
+# Display the result
+cat("Expected average winnings after 1,000,000 trials: ", expected_winnings, "\n")
+```
+This is not a fair game. The expectation value of the winning is $\frac{1}{6}*6+\frac{1}{6}*10-2=\frac{2}{3}\approx0.667$. This is proved by our MC simulation where the average expected winning is 0.661432 from 1M trials.
+
+## Problem 2 - Linear Regression
+
+### (a) Rename the columns
+
+```{r}
+# Load the dataset
+cars_data <- read.csv("cars.csv")
+
+# Renaming the columns to have more reasonable lengths
+colnames(cars_data) <- c(
+    'Height',
+    'Length',
+    'Width',
+    'Driveline',
+    'Engine_Type',
+    'Hybrid',
+    'Forward_Gears',
+    'Transmission',
+    'City_MPG',
+    'Fuel_Type',
+    'Highway_MPG',
+    'Classification',
+    'ID',
+    'Make',
+    'Model',
+    'Year',
+    'Horsepower',
+    'Torque'
+)
+
+# View the first few rows of the renamed dataset
+head(cars_data)
+```
+
+So we have renamed the columns. They are of nice sizes.
+
+### (b) Restrict the data to cars whose Fuel Type is “Gasoline”
+
+```{r}
+# Restrict the data to cars whose Fuel Type is "Gasoline"
+gasoline_cars <- cars_data[cars_data$Fuel_Type == "Gasoline", ]
+```
+
+I am creating a subset named "gasoline_cars". I don't like modifying on the original dataset directly.
+
+### (c) Examine the distribution of highway gas mileage
+
+```{r}
+# Examine the distribution of Highway MPG
+hist(gasoline_cars$Highway_MPG, 
+     breaks = 100, 
+     main = "Distribution of Highway MPG", 
+     xlab = "Highway MPG", 
+     col = "lightblue", 
+     border = "black")
+```
+
+The raw distribution looks skewed, but we need to check it explicitly.
+
+```{r}
+# Find the skewness and decide whether to make transformations.
+skewness <- mean((gasoline_cars$Highway_MPG - mean(gasoline_cars$Highway_MPG))^3) / sd(gasoline_cars$Highway_MPG)^3
+cat("Skewness of Highway MPG:", skewness, "\n")
+```
+
+Yes, it is skewed.
+
+```{r}
+# If skewness is high (greater than +2 or less than -2), consider a log transformation
+if (skewness > 2 | skewness < -2) {
+  gasoline_cars$log_Highway_MPG <- log(gasoline_cars$Highway_MPG)
+  
+  # Plot for the transformed variable
+  hist(gasoline_cars$log_Highway_MPG, 
+       breaks = 100, 
+       main = "Distribution of Log(Highway MPG)", 
+       xlab = "Log(Highway MPG)", 
+       col = "lightgreen", 
+       border = "black")
+  
+  # If needed, add the transformed variable to go forward
+  summary(gasoline_cars$log_Highway_MPG)
+} else {
+  cat("No transformation needed.\n")
+}
+```
+
+Here from the codes, we see that the skewness is high, so we are using the log transformation **log-transformed Highway MPG** in the future. The log distribution looks more normal too.
+
+### (d) Fit a linear regression model predicting MPG on the highway
+
+```{r}
+# Fit the linear regression model using the log-transformed Highway MPG
+model_log <- lm(log_Highway_MPG ~ Torque + Horsepower + Height + Length + Width + Year, data = gasoline_cars)
+
+# View the summary of the model
+summary(model_log)
+```
+
+In the fitted linear regression model , the coefficient for **Torque** is estimated to be **-0.002306**.
+Since the dependent variable is log-transformed, the coefficient of **Torque** can be interpreted as a percentage change: 1-unit increase in **Torque** is associated with ~0.23% decrease in **Highway MPG**, holding all other variables (Horsepower, Height, Length, Width, and Year) constant.
+This coefficient is statistically significant, with a p-value of **\< 2e-16**, indicating a very low likelihood that the result is due to chance.
+This result aligns with the expectation that vehicles with higher torque usually have more powerful engines, which often consume more fuel, resulting in lower fuel efficiency.
+As a conclusion, from this linear regression model with **log-transformed Highway MPG**, the strong statistical significance confirms that **Torque** has a real, measurable effect on **Highway MPG**.
+
+### (e) Refit the model
+Find a good year first:
+```{r}
+gasoline_cars$Year <- as.factor(gasoline_cars$Year)
+
+# Create a bar plot of the distribution of Year to examine it.
+barplot(table(gasoline_cars$Year), 
+        main = "Distribution of Cars by Year", 
+        xlab = "Year", 
+        ylab = "Number of Cars", 
+        col = "lightblue", 
+        border = "black")
+
+# Filter the dataset to only include cars from 2011
+cars_2011 <- subset(gasoline_cars, Year == "2011")
+```
+Let's choose the cars in 2011. Then let's choose some HP:
+```{r}
+# Check the summary in the 2011 subset
+summary(cars_2011$Horsepower)
+```
+I will use the 1st quartile, median, and the 3rd quartile for the main plot.
+Before the final plots, now we remove the outliers in torque.
+```{r}
+# Overview of distribution
+summary(cars_2011$Torque)
+Q1 <- quantile(cars_2011$Torque, 0.25)
+Q3 <- quantile(cars_2011$Torque, 0.75)
+IQR_torque <- Q3 - Q1
+
+# Define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR_torque
+upper_bound <- Q3 + 1.5 * IQR_torque
+
+# Remove outliers from the Torque
+cars_2011_no_outliers <- subset(cars_2011, Torque >= lower_bound & Torque <= upper_bound)
+```
+
+```{r}
+model_interaction_log <- lm(log_Highway_MPG ~ Torque * Horsepower + Height + Length + Width, data = cars_2011_no_outliers)
+
+hp_values <- c(185, 268, 325)  # Here are the values found above.
+
+library(interactions)
+#Generate the interaction plot for 2011 cars
+
+interact_plot(model_interaction_log, pred = Torque, modx = Horsepower, 
+              at = hp_values,  # Use specific horsepower values found above
+              plot.points = TRUE, 
+              main.title = "Relationship between torque and MPG (2011)",
+              x.label = "Torque", 
+              y.label = "log(Highway MPG)", 
+              legend.main = "Horsepower",
+              modx.values = hp_values,  # Explicitly set the horsepower values for the plot
+              modx.labels = c("185 HP", "268 HP", "325 HP"))  # Label the values accordingly
+```
+
+### (f) Calculate manually
+
+```{r}
+# Create the design matrix.
+X <- model.matrix(~ Torque + Horsepower + Height + Length + Width + Year, data = gasoline_cars)
+
+# Create the response vector y
+y <- gasoline_cars$log_Highway_MPG
+
+# Calculate the coefficients using matrix algebra
+# (X^T X)^{-1} X^T y
+beta_manual <- solve(t(X) %*% X) %*% t(X) %*% y
+
+# Display the manual coefficients
+cat("Manual coefficients:\n")
+print(beta_manual)
+
+# Compare with the lm() coefficients
+beta_lm_log <- coef(model_log)
+cat("\nCoefficients from lm() with log_Highway_MPG:\n")
+print(beta_lm_log)
+
+```
+
+As we can see, the manually calculated coefficients and the coefficients from the lm() model match exactly.
