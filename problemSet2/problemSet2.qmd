@@ -1,0 +1,20 @@
+---
+title: "STATS 506"
+subtitle: "Problem Set 2"
+author: "Sky Shi"
+date-modified: today
+format:
+  html:
+    css: style.css
+    toc: true
+    toc-depth: 5
+    toc-expand: 2
+    embed-resources: true
+editor: visual
+---
+
+The link to the problem set 2 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet2>, as a sub-folder of the STATS 506 repository.
+
+## Problem 1 - Wine Data
+
+### (a)
