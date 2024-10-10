@@ -1,0 +1,396 @@
+---
+title: "STATS 506"
+subtitle: "Problem Set 3"
+author: "Sky Shi"
+date-modified: today
+format:
+  html:
+    css: style.css
+    toc: true
+    toc-depth: 5
+    toc-expand: 2
+    embed-resources: true
+editor: visual
+---
+
+The link to the problem set 3 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet3>, as a sub-folder of the STATS 506 repository.
+
+## Problem 1 - Vision
+
+### (a) Download and merge files
+I am using knitr::kable for making the tables. For instructions and helps, I am finding them from https://bookdown.org/yihui/rmarkdown-cookbook/kable.html. And for reading .XPT files, I am using the website https://haven.tidyverse.org/reference/read_xpt.html. The table are already downloaded and put in the same folder as this .qmd file.
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(broom)
+library(haven)  # For reading .XPT files
+
+# Import VIX_D and DEMO_D datasets (files are in the working directory)
+vix_data <- read_xpt("VIX_D.XPT")
+demo_data <- read_xpt("DEMO_D.XPT")
+
+# Step 1: Inspect the structure of both datasets, commented out since output is too long
+# str(vix_data)
+# str(demo_data)
+
+# Step 2: Ensure SEQN is of the same type in both datasets
+vix_data$SEQN <- as.numeric(vix_data$SEQN)
+demo_data$SEQN <- as.numeric(demo_data$SEQN)
+
+# Step 3: Find the common SEQN values between the two datasets
+common_seqn <- intersect(vix_data$SEQN, demo_data$SEQN)
+
+# Step 4: Merge only the records that have common SEQN values
+merged_data <- merge(vix_data, demo_data, by = "SEQN", all = FALSE)
+
+# Step 5: Sanity check for number of records after merging
+sample_size <- nrow(merged_data)
+print(paste("Sample size after merging:", sample_size))  # Should show the correct sample size
+```
+The total sample size is 6980, as wanted.
+
+### (b) Estimate the proportion of respondents
+
+```{r}
+# Create age groups in 10-year intervals (0-9, 10-19, etc.)
+merged_data <- merged_data %>%
+  mutate(age_group = cut(RIDAGEYR, breaks = seq(0, 100, by = 10), right = FALSE))
+
+# Calculate the proportion of respondents who wear glasses or contacts for each age group
+proportion_table <- merged_data %>%
+  group_by(age_group) %>%
+  summarise(prop_glasses = round(mean(VIQ220 == 1, na.rm = TRUE), 3))  # Round the proportions to 3 decimal places
+
+# Rename columns to make the headers clearer
+colnames(proportion_table) <- c("Age Group", "Proportion")
+
+# Display the proportion table with improved formatting and correct headers
+kable(proportion_table, format = "html", 
+      caption = "Proportion of Respondents Wearing Glasses/Contacts by Age Group") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = TRUE) %>%  # Make the "Age Group" column bold for emphasis
+  row_spec(0, bold = TRUE, background = "#D3D3D3")  # Style the header row
+
+```
+
+### (c) Produce a table presenting the estimated odds ratios
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(knitr)
+
+# Merge the datasets (assuming demo_data and vix_data are already loaded)
+merged_data <- merge(demo_data, vix_data, by = "SEQN")
+
+# Filter and recode VIQ220: 1 = Yes (wears glasses/contacts), 0 = No (does not wear glasses/contacts)
+merged_data <- merged_data %>%
+  filter(VIQ220 %in% c(1, 2)) %>%
+  mutate(VIQ220 = ifelse(VIQ220 == 1, 1, 0))
+
+# Model 1: Age only
+model1 <- glm(VIQ220 ~ RIDAGEYR, data = merged_data, family = binomial())
+
+# Model 2: Age, race, and gender
+model2 <- glm(VIQ220 ~ RIDAGEYR + RIDRETH1 + RIAGENDR, data = merged_data, family = binomial())
+
+# Model 3: Age, race, gender, and poverty income ratio
+model3 <- glm(VIQ220 ~ RIDAGEYR + RIDRETH1 + RIAGENDR + INDFMPIR, data = merged_data, family = binomial())
+
+# Function to calculate McFadden's pseudo-R^2
+pseudo_r2 <- function(model) {
+  1 - (logLik(model)[1] / logLik(glm(VIQ220 ~ 1, data = merged_data, family = binomial()))[1])
+}
+
+# Calculate AIC and Pseudo R^2 for each model
+aic_model1 <- AIC(model1)
+pseudo_r2_model1 <- pseudo_r2(model1)
+
+aic_model2 <- AIC(model2)
+pseudo_r2_model2 <- pseudo_r2(model2)
+
+aic_model3 <- AIC(model3)
+pseudo_r2_model3 <- pseudo_r2(model3)
+
+# Extract odds ratios (exp(coef)) and confidence intervals using broom::tidy
+model1_summary <- tidy(model1, conf.int = TRUE, exponentiate = TRUE)
+model2_summary <- tidy(model2, conf.int = TRUE, exponentiate = TRUE)
+model3_summary <- tidy(model3, conf.int = TRUE, exponentiate = TRUE)
+
+# Create a summary table with improved headers and rounded values
+results <- data.frame(
+  Model = c("Model 1: Age Only", "Model 2: Age, Race, Gender", "Model 3: Age, Race, Gender, PIR"),
+  `Odds Ratio (Age)` = round(c(model1_summary$estimate[2], model2_summary$estimate[2], model3_summary$estimate[2]), 3),
+  `Odds Ratio (Race/Ethnicity)` = round(c(NA, model2_summary$estimate[3], model3_summary$estimate[3]), 3),
+  `Odds Ratio (Gender)` = round(c(NA, model2_summary$estimate[4], model3_summary$estimate[4]), 3),
+  `Odds Ratio (PIR)` = round(c(NA, NA, model3_summary$estimate[5]), 3),
+  `AIC` = round(c(aic_model1, aic_model2, aic_model3), 3),
+  `Pseudo R²` = round(c(pseudo_r2_model1, pseudo_r2_model2, pseudo_r2_model3), 3),
+  `Sample Size` = c(nobs(model1), nobs(model2), nobs(model3))
+)
+
+# Rename columns for clearer headers
+colnames(results) <- c("Model", 
+                       "Odds Ratio (Age)", 
+                       "Odds Ratio (Race/Ethnicity)", 
+                       "Odds Ratio (Gender)", 
+                       "Odds Ratio (PIR)", 
+                       "AIC", 
+                       "Pseudo R²", 
+                       "Sample Size")
+
+# Display the logistic regression results with improved formatting
+kable(results, format = "html", 
+      caption = "Logistic Regression Results: Predicting Glasses/Contacts Usage") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = TRUE) %>%  # Make the "Model" column bold for emphasis
+  row_spec(0, bold = TRUE, background = "#D3D3D3")  # Style the header row
+```
+
+### (d) Test the odds
+
+```{r}
+# Extract the p-value for the gender coefficient from Model 3
+model3_summary <- summary(model3)
+
+# Extract p-value for the gender coefficient (RIAGENDR)
+p_value_gender <- coef(summary(model3))["RIAGENDR", "Pr(>|z|)"]
+
+# Print the p-value, rounded for clarity
+cat("P-value for Gender Coefficient:", p_value_gender, "\n")
+
+# Create a contingency table of gender vs. glasses/contact lenses usage (VIQ220)
+contingency_table <- table(merged_data$RIAGENDR, merged_data$VIQ220)
+
+# Perform a chi-square test
+chi_square_test <- chisq.test(contingency_table)
+
+# Print the chi-square test results
+cat("Chi-Square Test Results:\n")
+cat("Chi-Square Statistic:", round(chi_square_test$statistic, 3), "\n")
+cat("Degrees of Freedom:", chi_square_test$parameter, "\n")
+cat("P-value for Chi-Square Test:", chi_square_test$p.value, "\n")
+```
+
+Both the logistic regression and chi-square tests show a **significant difference** between men and women in wearing glasses/contact lenses for distance vision. The p-value from the logistic regression (`9.508976e-22`) confirms that men have **higher odds** of wearing glasses/contacts compared to women. The chi-square test (statistic = `70.955`, p-value = `3.654119e-17`) also indicates a **significant difference** in the **proportions** of men and women who wear glasses/contacts. Therefore, gender is a strong predictor of wearing glasses/contact lenses for distance vision.
+
+## Problem 2 - Sakila
+
+### (a) Oldest movie
+```{r}
+# Load libraries
+library(DBI)
+library(RSQLite)
+
+# Connect to the SQLite database (make sure to update the path if necessary)
+conn <- dbConnect(RSQLite::SQLite(), dbname = "sakila_master.db")
+
+# List all tables to make sure you are not using any tables ending in '_list'
+tables <- dbListTables(conn)
+tables <- tables[!grepl("_list$", tables)]  # Filter out tables ending in '_list'
+
+# SQL query to find the oldest movie year and count how many movies were released in that year
+oldest_movie_query <- "
+  SELECT release_year, COUNT(*) AS movie_count
+  FROM film
+  GROUP BY release_year
+  ORDER BY release_year ASC
+  LIMIT 1;
+"
+
+# Execute the query and fetch the results
+oldest_movie_result <- dbGetQuery(conn, oldest_movie_query)
+
+# Display the result
+oldest_movie_result
+
+```
+The oldest movies are from 2006, with 1000 of them.
+
+### (b) Least common genre
+```{r}
+# Approach 1: SQL + R Operations
+category_data <- dbGetQuery(conn, "SELECT * FROM category")
+film_category_data <- dbGetQuery(conn, "SELECT * FROM film_category")
+
+# Merge the category and film_category data
+genre_data <- merge(category_data, film_category_data, by = "category_id")
+
+# Use R operations to count the number of movies in each genre
+genre_count <- genre_data %>%
+  group_by(name) %>%
+  summarise(movie_count = n()) %>%
+  arrange(movie_count)
+
+# Display the least common genre using R operations
+least_common_genre_r <- genre_count %>%
+  slice(1)
+cat("Least common genre using R operations:\n")
+print(least_common_genre_r)
+
+# Approach 2: Single SQL query
+least_common_genre_query <- "
+  SELECT c.name AS genre, COUNT(fc.film_id) AS movie_count
+  FROM category c
+  JOIN film_category fc ON c.category_id = fc.category_id
+  GROUP BY c.name
+  ORDER BY movie_count ASC
+  LIMIT 1;
+"
+least_common_genre_result <- dbGetQuery(conn, least_common_genre_query)
+cat("Least common genre using SQL query:\n")
+print(least_common_genre_result)
+
+```
+So the Music movie is the least common in data, and there are 51 of them.
+
+### (c) Countries with exactly 13 customers
+```{r}
+# Approach 1: SQL query to extract data and solve with R operations
+
+# Extract the relevant data from the country, city, address, and customer tables
+country_data <- dbGetQuery(conn, "SELECT * FROM country")
+city_data <- dbGetQuery(conn, "SELECT * FROM city")
+address_data <- dbGetQuery(conn, "SELECT * FROM address")
+customer_data <- dbGetQuery(conn, "SELECT * FROM customer")
+
+# Merge the tables using R operations
+merged_data <- country_data %>%
+  inner_join(city_data, by = "country_id") %>%
+  inner_join(address_data, by = "city_id") %>%
+  inner_join(customer_data, by = "address_id")
+
+# Count the number of customers per country and filter for those with exactly 13 customers
+customer_count_r <- merged_data %>%
+  group_by(country) %>%
+  summarise(customer_count = n()) %>%
+  filter(customer_count == 13)
+
+# Display the result using R operations
+customer_count_r
+
+# Approach 2: Single SQL query to find countries with exactly 13 customers
+countries_with_13_customers_query <- "
+  SELECT co.country, COUNT(c.customer_id) AS customer_count
+  FROM country co
+  JOIN city ci ON co.country_id = ci.country_id
+  JOIN address a ON ci.city_id = a.city_id
+  JOIN customer c ON a.address_id = c.address_id
+  GROUP BY co.country
+  HAVING customer_count = 13;
+"
+
+# Execute the SQL query and display the result
+countries_with_13_customers_result <- dbGetQuery(conn, countries_with_13_customers_query)
+countries_with_13_customers_result
+```
+So Argentina and Nigeria have exactly 13 customers.
+
+## Problem 3 - US Records
+
+### (a) Proportion of email addresses with .com
+```{r}
+# Load the "US - 500 Records" data
+us_records <- read.csv("us-500.csv")
+
+# Extract the email column
+emails <- us_records$email
+
+# Extract the domain and TLD from each email address
+email_domains <- sub(".*@", "", emails)  # Extracts the part after '@'
+email_tlds <- sub(".*\\.", "", email_domains)  # Extracts the TLD (part after the last '.')
+
+# Calculate the proportion of email addresses with TLD '.com'
+proportion_com <- sum(email_tlds == "com") / length(email_tlds)
+
+# Display the result
+cat("Proportion of email addresses with TLD '.com':", proportion_com, "\n")
+```
+### (b) Proportion of email addresses with non alphanumeric character
+```{r}
+# Remove '@' and '.' from the email addresses and check if there are any non-alphanumeric characters
+cleaned_emails <- gsub("[@.]", "", emails)  # Remove "@" and "."
+non_alphanumeric_count <- sum(grepl("[^a-zA-Z0-9]", cleaned_emails))  # Count emails with non-alphanumeric characters
+
+# Calculate the proportion of emails with non-alphanumeric characters
+proportion_non_alphanumeric <- non_alphanumeric_count / length(emails)
+
+# Display the result
+cat("Proportion of email addresses with non-alphanumeric characters (excluding '@' and '.'):",
+    round(proportion_non_alphanumeric, 5), "\n")
+```
+### (c) Top 5 most common area codes
+```{r}
+# Extract the phone number column
+phone_numbers <- us_records$phone1
+
+# Extract the area codes (first 3 digits of the phone number)
+area_codes <- substr(phone_numbers, 1, 3)
+
+# Count the occurrences of each area code
+area_code_counts <- table(area_codes)
+
+# Find the top 5 most common area codes
+top_5_area_codes <- sort(area_code_counts, decreasing = TRUE)[1:5]
+
+# Display the result
+cat("Top 5 most common area codes:\n")
+print(top_5_area_codes)
+```
+### (d) Log of the apartment numbers
+```{r}
+# Extract the address column
+addresses <- us_records$address
+
+# Use regex to extract apartment numbers that follow a '#' symbol
+# This regex ensures only numbers after '#' are extracted, and it will return NA for addresses without a '#'
+apartment_numbers_raw <- ifelse(grepl("#\\d+$", addresses), sub(".*#(\\d+)$", "\\1", addresses), NA)
+
+# Convert valid apartment numbers to numeric (any non-numeric results will become NA)
+apartment_numbers <- as.numeric(apartment_numbers_raw)
+
+# Remove any NAs (addresses without apartment numbers or invalid numbers)
+apartment_numbers <- na.omit(apartment_numbers)
+
+# Take the log of the apartment numbers (log transformation)
+log_apartment_numbers <- log(apartment_numbers)
+
+# Produce a histogram of the log of apartment numbers
+hist(log_apartment_numbers, main = "Histogram of Log of Apartment Numbers",
+     xlab = "Log of Apartment Numbers", col = "skyblue", border = "white", breaks = 10)
+```
+### (e) Benford’s law
+```{r}
+# Remove any NAs from apartment numbers
+apartment_numbers <- na.omit(apartment_numbers)
+
+# Extract the leading digit from each apartment number
+leading_digits <- as.numeric(substr(as.character(apartment_numbers), 1, 1))
+
+# Count the frequency of each leading digit
+observed_distribution <- table(leading_digits) / length(leading_digits)
+
+# Expected distribution according to Benford's Law
+benford_law <- log10(1 + 1 / (1:9))
+
+# Create a data frame to compare observed and expected distributions
+comparison_df <- data.frame(
+  Digit = 1:9,
+  Observed = as.numeric(observed_distribution),
+  Expected = benford_law
+)
+
+# Plot the observed and expected distributions
+library(ggplot2)
+ggplot(comparison_df, aes(x = Digit)) +
+  geom_bar(aes(y = Observed), stat = "identity", fill = "blue", alpha = 0.6) +
+  geom_line(aes(y = Expected), color = "red", linewidth = 1.2) +  # Updated to use linewidth
+  geom_point(aes(y = Expected), color = "red", size = 3) +
+  labs(title = "Observed vs Expected (Benford's Law) Leading Digits of Apartment Numbers",
+       x = "Leading Digit", y = "Proportion") +
+  theme_minimal()
+
+```
+The apartment numbers don’t seem to follow Benford’s Law, which predicts that lower digits like 1 should appear more frequently as the first digit. In my data, the leading digits are more evenly spread, with spikes at 5 and 9, which is not what Benford’s Law suggests. This makes sense because this dataset is fake, it's not real-world data, and could have been randomly generated or assigned in a way that doesn’t reflect natural patterns. So, they likely wouldn't pass as real data.
