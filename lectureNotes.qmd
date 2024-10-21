@@ -1,12 +1,20 @@
 ---
 title: "Lecture Notes"
-format: html
+format:
+  html:
+    css: style.css
+    toc: true
+    toc-depth: 5
+    toc-expand: 2
+    embed-resources: true
 author: "Sky Shi"
 date-modified: today
 editor: visual
 ---
 
-## Importing files into R
+## Sep 3
+
+### Importing files into R
 
 To read files, we can:
 
@@ -20,7 +28,7 @@ And to write files, we can:
 # write.csv(data, 'name')
 ```
 
-## Vectors
+### Vectors
 
 There are types of objects, for example, if we use:
 
@@ -159,7 +167,7 @@ ll <- list(a = 1, b = 2)
 ll$b
 ```
 
-## Class
+### Class
 
 For basic things, class does not change much from vectors:
 
@@ -179,7 +187,7 @@ class(a) <- c("cat")
 class(a) <- c("cat", "dog")
 ```
 
-## Matrix
+### Matrix
 
 Matrices can be defined as:
 
@@ -311,9 +319,476 @@ any(c(TRUE, TRUE, TRUE))
 any(c(TRUE, FALSE, TRUE))
 ```
 
+## Sep 5th
+### Writing functions
+We should make our functions easy to read. We create our function by:
+```{r}
+foo <- function() {
+  print(3)
+}
 
-## Statistics
+foo()  # This runs the function
+foo  # This prints out the content of the function.
+```
+For example, if we want to get the z-score. WE may write:
+```{r}
+x <- runif(100, 15, 100)
+xbar <- mean(x)
+xsd <- sd(x)
+z <- (x - xbar)/xsd
+mean(z)
+sd(z)
+```
+However, we can also write functions to do the job:
+```{r}
+std <- function(x) {
+  xbar <- mean(x)
+  xsd <- sd(x)
+  z <- (x - xbar)/xsd
+  return(z)
+}
+std(c(2, 5, 2))
+```
+We also can modify the called functions in the functions:
+```{r}
+std(c(1, 2, 5, NA))
+mean(c(1, 2, NA), na.rm = TRUE)  # We need to remove the na values.
+```
+So we can improve our function and also write:
+```{r}
+std1 <- function(x) {
+  xbar <- mean(x, na.rm = TRUE)
+  xsd <- sd(x, na.rm = TRUE)
+  z <- (x - xbar)/xsd
+  return(z)
+}
+
+std1(c(2, 5, 2))
+std1(c(1, 2, 5, NA))
+```
+We can also control whether we want this error handling:
+```{r}
+std2 <- function(x, na.rm) {
+  xbar <- mean(x, na.rm = na.rm)
+  xsd <- sd(x, na.rm = na.rm)
+  z <- (x - xbar)/xsd
+  return(z)
+}
+
+std2(c(1, 2, 5, NA), TRUE)
+std2(c(1, 2, 5, NA), FALSE)
+```
+In the function definitions, sometimes we can also have variables that are unused:
+```{r}
+std3 <- function(x, y = "cat", na.rm = FALSE) {
+  xbar <- mean(x, na.rm = na.rm)
+  xsd <- sd(x, na.rm = na.rm)
+  z <- (x - xbar)/xsd
+  return(z)
+}
+
+std3(c(1, 2, 5, NA), "dog", FALSE)
+std3(c(1, 2, 3, NA))
+```
+For standardizing, we need to write documentation for our functions, for example for the function we wrote, we may write:
+```{r}
+#' Standardize a vector of numerics
+#' 
+#' Description of what it does
+#' 
+#' Details of what it does
+#'
+#' @param x vector of numerics
+#' @param na.rm logical, should NA's be removed? Default is TRUE.
+#'
+#' @return vector of standardized numerics
+#' @export
+#'
+#' @examples
+#' x <- runif(2, 5, 10)
+#' std4(x)
+std4 <- function(x, na.rm = FALSE) {
+  # std4 - takes in a vector of numerics, generates
+  # their z-scores, and returns the vector of
+  # z-scores
+  xbar <- mean(x, na.rm = na.rm)
+  xsd <- sd(x, na.rm = na.rm)
+  z <- (x - xbar)/xsd
+  return(z)
+}
+x <- 7
+```
+More importantly, we need to sanitize our inputs:
+```{r}
+std5 <- function(x, na.rm = FALSE) {
+  if (!is.numeric(x)) {
+    warning("x must be numeric, attempting to convert")
+    suppressWarnings(x <- as.numeric(x))  # It supresses warnings, but we should't use it often since warnings tell us error messages.
+    if (all(is.na(x))) {
+      stop("x must be numeric, or convertible to numeric")
+    }
+  }
+  if (length(x) == 0) {
+    stop("x must have strictly positive length")
+  }
+  if (length(x) == 1) {
+    return(0)
+  }
+  if (!is.logical(na.rm)) {
+    stop("na.rm must be logical")
+  }
+  xbar <- mean(x, na.rm = na.rm)
+  xsd <- sd(x, na.rm = na.rm)
+  z <- (x - xbar)/xsd
+  return(z)
+  # (x - mean(x, na.rm = na.rm))/sd(x, na.rm = na.rm)
+}
+std5(c(1, 2, 3))
+std5(c("1", "2", "3"))  # We will try to convert to numeric at first.
+# std5(c("a", "b"))  # Error in std5(c("a", "b")) : x must be numeric, or convertible to numeric
+```
+We can also have functions in functions:
+```{r}
+bar <- function(x) {
+  x
+}
+
+baz <- function(x) {
+  bar(x)
+}
+
+x <- 5
+baz(x)
+baz(5)
+```
+And assigning variables in functions, we prefer using "=":
+```{r}
+baz(x = 5)
+baz(x <- 5) # very bad
+
+bar <- function(x) {
+  x
+  print(1)
+}
+
+bar(5)
+```
+Inside functions, if we use "<<-", the variable will be global instead.
+```{r}
+baz <- function() {
+  p <<- 5  
+  return(p)
+}
+p <- "car"
+baz()
+```
+Using "print" in functions will print functions out; however, "return" will return the value but terminate our functions.
+```{r}
+foo <- function() {
+  print(1)
+  return(2)
+  print(3)
+}
+
+foo()
+```
+### Condition and loops
+We can use conditional statements by "if", for example:
+```{r}
+if (4 > 5) { 
+  print(1)
+} else {
+  print(2)
+}
+
+if (4 < 5) {
+  print(1)
+} else if (6 > 10) { 
+  print(2)
+} else {
+  print(3)
+}
+```
+And we can run for loops, the following functions will print out numbers from 1 to 10 and characters "a", "g", "e":
+```{r}
+for (i in 1:10) {
+  print(i)
+}
+
+for (i in c("a", "g", "e")) {
+  print(i)
+}
+```
+We can use the loops for calculation and combine it with if statements, for example if we want to add numbers from 1 to 100 and break the loop when the sum is no less than 15:
+```{r}
+sum <- 0
+for (i in 1:100) {
+  sum <- sum + i
+  if (sum >= 15) {
+    break
+  }
+}
+sum
+```
+Or if we want to add odd numbers until we hit 15:
+```{r}
+sum <- 0
+for (i in 1:100) {
+  if (i %% 2 == 0) {
+    next
+  }
+  print(sum)
+  sum <- sum + i
+  if (sum >= 15) {
+    break
+  }
+}
+sum
+```
+We also have "while" statements, it will keep running when the condition is met, here is means sum is smaller than 15:
+```{r}
+sum <- 0
+while (sum < 15) {
+  sum <- sum + 1
+}
+
+sum
+```
+## Sep 10th
+### Writing functions are vectorized operations
+For example, if we want to take the sum of the vector, we can do it in a straightforward way or just write a function:
+```{r}
+x <- c(5, 2, 6, 1, 2, 3)
+s0 <- 0
+
+for (i in 1:length(x)) {
+  s0 <- s0 + x[i]
+}
+
+#' Manual summing
+#' @param x a vector to sum
+#' @return the sum of the vector
+mysum <- function(x) {
+  # input sanitize here
+  s0 <- 0
+  for (i in 1:length(x)) {
+    s0 <- s0 + x[i]
+  }
+  return(s0)
+}
+```
+We can check the run time of the functions:
+```{r}
+library(microbenchmark)
+
+z <- 1:10000
+sum(z)
+mysum(z)
+microbenchmark(sum(z), mysum(z))
+
+
+mysum(1:100000000)
+sum(1:100000000)
+```
+We see if we use loops, it's slower than vectorized function. When we create a loop, we do a lot of reassignments so it's slow.
+
+### Apply function
+For example, if we want to apply functions to matrices:
+```{r}
+m <- matrix(c(2, 3, 4, 1, 2, 3, -1, 2), nrow = 4)
+mean(m[, 1])
+mean(m[, 2])
+apply(m, 2, mean)  # 2 indicating columns
+apply(m, 1, mean)  # 1 indicating rows
+apply(m, c(1, 2), mean)
+apply(m, c(1, 2), abs)
+
+m <- matrix(c(2, NA, 4, 1, 2, 3, -1, 2), nrow = 4)
+m
+apply(m, 2, mean)  # the NA value will interfere with our calculations
+apply(m, 2, mean, na.rm = TRUE)  # pass additional arguments
+```
+We can also apply multiple functions:
+```{r}
+#' input: vector k
+#' output: vector of length 1 of average absolute value
+abs_and_mean <- function(k, na.rm = FALSE) {
+  mean(abs(k), na.rm = na.rm)
+}
+
+apply(m, 2, abs_and_mean, na.rm = TRUE)
+
+
+# But we can also use the apply function directly ot use 2 functions.
+rm(abs_and_mean)
+
+apply(m, 2, function(k, na.rm = TRUE) {
+  mean(abs(k), na.rm = na.rm)
+})
+
+# Back slash is a simple way of writing functions
+apply(m, 2, \(k, na.rm = TRUE) {
+  mean(abs(k), na.rm = na.rm)
+})
+```
+### lapply and sapply function
+lapply function is used on lists, it applys the function to each element in the list. sapply function will return a list that has been applied the function and has the same length as the originam list. Only use sapply when you are certain about the result so you would not get results that are non-sensical:
+```{r}
+ll <- list(c(1, 2, 3), c(1), c(1:10))
+lapply(ll, length)
+sapply(ll, length)
+
+l2 <- list(matrix(1:4, nrow = 2), matrix(1:6, nrow = 3),
+           array(1:8, dim = c(2, 2, 2)))
+lapply(l2, dim)
+sapply(l2, dim)
+
+l3 <- list(matrix(1:4, nrow = 2), matrix(1:6, nrow = 3),
+           array(1:8, dim = c(2, 4)))
+sapply(l3, dim)
+```
+We use the mtcar dataframe as an example:
+```{r}
+data(mtcars)
+mtcars$wt[1] <- NA
+
+sapply(mtcars, mean)
+sapply(mtcars, mean, na.rm = TRUE)
+
+sapply(mtcars, function(x) mean(-x, na.rm = TRUE))
+```
+### vapply
+The vapply function
+```{r}
+vapply(mtcars, mean, 1)
+
+l2 <- list(matrix(1:4, nrow = 2), matrix(1:6, nrow = 3),
+           array(1:8, dim = c(2, 2, 2)))
+lapply(l2, dim)
+sapply(l2, dim)
+# vapply(l2, dim, c(1, 1)) it will throw an error because the output size is different from being told
+vapply(l2, is.numeric, TRUE)
+```
+If we now have a list of length 2 and a vector of length 2:
+```{r}
+price_by_category <- list(3:1, 5:1)
+index_of_category <- c(1, 4)
+
+# It returns the first element of 3:1 and the second element of 5:1
+mapply(function(x, index) {
+  x[index]
+}, 
+price_by_category, 
+index_of_category)
+```
+Let's looks at the example of the Iris dataset:
+```{r}
+data(iris)
+sapply(iris, mean)
+sapply(iris[, -5], mean)
+tapply(iris$Petal.Length, iris$Species, mean)
+```
+### Writing vectorized codes:
+For example, if we now write functions that returns non-negative abs of the numbers:
+```{r}
+negabs1 <- function(x) {
+  if (x <= 0) {
+    return(x)
+  }
+  if (x > 0) {
+    return(-x)
+  }
+}
+
+negabs1(5)
+negabs1(-1)
+# negabs1(c(2, -3)) it won't work since it's just for a single number
+
+
+negabs2 <- function(x) {
+  out <- vector(length = length(x))
+  for (i in 1:length(x)) {
+    out[i] <- if (x[i] <= 0) {
+      x[i] 
+    } else {
+      -x[i]
+    }
+  }
+  return(out)
+}
+
+
+negabs2(-1)
+negabs2(5)
+negabs2(c(2, 6, -1, 0, 3, -1))
+
+# Using for loops
+negabs3 <- function(x) {
+  out <- c()
+  for (i in 1:length(x)) {
+    out <- c(out, 
+             if (x[i] <= 0) {
+               x[i] 
+             } else {
+               -x[i]
+             }
+    )
+  }
+  return(out)
+}
+
+negabs3(-1)
+negabs3(5)
+negabs3(c(2, 6, -1, 0, 3, -1))
+```
+If we compare the run time of the negabs2 and negabs3:
+```{r}
+microbenchmark(negabs2(-1000:1000),
+               negabs3(-1000:1000))
+
+# Also write another function
+negabs4 <- function(x) {
+  -abs(x)
+}
+
+microbenchmark(negabs2(-1000:1000),
+               negabs3(-1000:1000),
+               negabs4(-1000:1000))
+```
+We see that the version "negabs2" without using the for loop and calling the vector only once is faster than "negabs3". And the built-in abs function is the fastest. To write vectorized functions, use vectorized functions.
+### Sampling
+The sample function draws random elements from a list, and it can be controlled by the randomizing seed:
+```{r}
+hist(rgamma(1000, shape = 4, rate = 2))
+
+sample(5:73, 10, replace = TRUE)
+sample(c(0, 1), 10, replace = TRUE)
+
+set.seed(20240910)
+sample(c(0, 1), 10, replace = TRUE)
+sample(c(0, 1), 10, replace = TRUE)
+```
+
+Estimating pi example:
+```{r}
+#' Estimate pi
+#' @param n number of Monte Carlo draws
+#' @return an estimate of pi
+estimate_pi <- function(n) {
+  xcoords <- runif(n, -1, 1)
+  ycoords <- runif(n, -1, 1)
+  in_circle <- sqrt(xcoords^2 + ycoords^2) <= 1
+  return(4*sum(in_circle)/n)
+}
+estimate_pi(1000000)
+```
+## Sep 12th
+
+
+### Statistics
+
 We can access the quantiles of our datasets:
+
 ```{r}
 n <- 10000
 df <- 3
@@ -336,6 +811,7 @@ odat[round(.025*n)]
 ```
 
 If we generate a new set of data and find the confidence intervals:
+
 ```{r}
 reps <- 15
 n <- 10000
@@ -357,6 +833,7 @@ mean(coverage)  # We see that it's basically full coverage.
 ```
 
 If we prefer working with matrices:
+
 ```{r}
 a <- matrix(1:8, nrow=2)
 
@@ -372,6 +849,7 @@ print(t(t(a) + c(1,10)))
 ```
 
 Let's work on an example:
+
 ```{r}
 n <- 50
 m <- 200
@@ -410,8 +888,10 @@ mean(savedcor3)
 print("The results from different methods are the same")
 ```
 
-## Function coding
+### Function coding
+
 Following what we had for the statistics section, now we write some function:
+
 ```{r}
 coveragesim <- function(reps, n, df, afunc){
   sims <- rt(reps*n, df=df)
@@ -428,3 +908,1280 @@ coveragesim <- function(reps, n, df, afunc){
 coveragesim(reps, n, df)
 
 ```
+
+## Sep 17
+
+### Debugging
+
+Double arrows are used to store local variables in function as global variables.
+
+```{r}
+somefunc <- function(x,y,z){
+  sum_local <- x+y+z
+  sum_global <<- x+y+z
+  print(sum_local, sum_global)
+}
+somefunc(1,2,3)
+print("We can see the the sum_global is stored in the global environment")
+```
+
+There is a function named browser which allows us to do debugging inside the local environment:
+
+```{r}
+somefunc <- function(x,y,z){
+  browser()
+  mean_val = mean(c(x,y,z))
+  sum_local <- x+y+z
+}
+somefunc(1,2,3)
+
+```
+
+We can also debug functionals (functions in functions):
+
+```{r}
+foo <- function(){
+  # We can use browsers() function to browse the loops.
+  boo()
+}
+
+boo <- function(){
+  doo()
+}
+
+doo <- function(){
+  m <- c(1,2)
+  return(m[3])
+}
+foo()
+traceback()
+```
+
+## Sep 19
+### Profiling
+When the code is running, profiling will give you a status of your function. We see three things, the code, the frame graph, and the data view. They basically show the same things: the memory and run time.
+```{r}
+library(profvis)
+
+# Set parameters
+n <- 300
+m <- 100000
+r <- .4
+
+# generate data
+y <- rnorm(n)
+xmat <- matrix(rep(y, times = m), ncol = m)
+xmat <- r * xmat + rnorm(n * m, sd = sqrt(1 - r^2))
+
+# Standardize x's
+profvis({
+  rmn <- colMeans(xmat)
+  xmat_c <- xmat - matrix(rep(rmn, each = n), ncol = m)
+  rsd <- sqrt(colSums(xmat_c^2) / (n - 1))
+  #rsd <- apply(xmat, 2, sd)
+  xmat_s <- xmat_c / matrix(rep(rsd, each = n), ncol = m)
+  
+  # standardize y
+  y_s <- (y - mean(y)) / sd(y)
+  
+  # results
+  r3 <- y_s %*% xmat_s / (n - 1)
+  r3 <- as.vector(r3)
+})
+```
+### Matrix operations
+```{r}
+c(1,2) + c(2, 3, 4)  # It will be elementwise, so it's 1+2, 2+3, 1+4
+c(1, 2, 3) + c(1, 2)  # It is also elementwise, so it is 1+1, 2+2, 3+1
+
+c(1, 2, 3) + 4  # It will add 4 to all of them
+c(1, 2, 3) + c(4)  # Same as above, because it will be elementwise
+c(1, 2) + mean(c(1, 2, 3))  # mean of an array is also a number
+
+result <- c(1, 2) * matrix(1:6, nrow = 2)
+if (all(dim(result) != c(2,3))) {
+  stop("error")
+}
+matrix(c(1, 2), nrow = 1) %*% matrix(1:6, nrow = 2)  # %*% for matrix operations
+#matrix(c(1, 2), nrow = 1) * matrix(1:6, nrow = 2)  it will throw an error because by default, it will be elementwise
+```
+### Linear regression models
+Now we want to know how the models and model fitting works for R. We use the example of the mtcars dataset again.
+```{r}
+data(mtcars)
+
+form <- qsec ~ disp + cyl  # we are modeling the outcome with variables
+# qsec = beta_0 + beta_1*disp + beta_2*cyl + epsilon
+# RHS :  disp + cyl
+# LHS: qsec
+```
+The linear regression model is given by lm:
+```{r}
+lm(form, data = mtcars)
+lm(qsec ~ disp + cyl, data = mtcars)
+```
+In addition to variables, we can do other things to manipulate how our models work. If we want to remove the intercept, both +0 and -1 will do thing job:
+```{r}
+lm(qsec ~ disp + cyl + 0, data = mtcars)  
+lm(qsec ~ disp + cyl - 1, data = mtcars)
+```
+We also have other ways for fitting data:
+```{r}
+lm(qsec ~ disp * cyl, data = mtcars)  # This * means considering the interaction given by this product.
+lm(qsec ~ disp : cyl, data = mtcars)  # This : means we only want to consider the interaction term.
+lm(qsec ~ disp + cyl + disp : cyl, data = mtcars)  # This does the same thing as the first line, but in more details.
+lm(qsec ~ disp * cyl * mpg, data = mtcars)  # Now we include all the 3 pieces and all the interactions.
+
+lm(qsec ~ disp + cyl + disp:cyl + disp:mpg + cyl:mpg + disp:cyl:mpg, 
+   data = mtcars)  # If we don't want the mpg fit, we can write out the terms explicitly.
+
+lm(qsec ~ disp * cyl * mpg - mpg, data = mtcars)  # Or we can just remove the term by -.
+
+lm(qsec ~ ., data = mtcars)  # It includes every term in the dataset.
+
+mod <- lm(qsec ~ . - am, data = mtcars)  # Everything but the am.
+```
+If we want to check the details of our linear model, we can see its summary:
+```{r}
+smod <- summary(mod)
+is(mod)  # It's a list
+is(smod)  # It's also a list
+stats:::print.lm(mod)  # It prints out the details of the list
+mod$coefficients  # The $ pulls contents out
+head(mod$fitted.values)  #
+smod$r.squared  # Also we can pull out things from the summary.
+```
+If we want to get the coefficients, residuals, fitted.values, we have direct functions to call them:
+```{r}
+mod$coefficients
+smod$coefficients
+coefficients(mod)
+residuals(mod)
+head(predict(mod))
+head(mod$fitted.values)  # It's the same as predicting.
+```
+If we want to fit quadratic:
+```{r}
+lm(mpg ~ wt*wt, data = mtcars)  # It won't work
+
+# There are several other ways to do it, one is to define the wt^2 directly, though not encouraged:
+mtcars$wtsq <- mtcars$wt^2
+lm(mpg ~ wt + wtsq, data = mtcars)  # R don't know if wt and wtsq are connected.
+
+# Or we can use I, which tells R to use the math:
+mod <- lm(mpg ~ wt + I(wt*wt), data = mtcars)
+names(mod$coef)
+mod$coef["I(wt * wt)"]  # We see the name is not very nice looking.
+
+# The recommended way is to use function poly:
+lm(mpg ~ poly(wt, degree = 2), data = mtcars)  # It is different compared to using wt^2 directly.
+
+# If we check the summaries of the functions, we see that the coefficients are identical.
+summary(lm(mpg ~ poly(wt, degree = 2), data = mtcars))  # generates the first-degree and second-degree polynomial terms of wt, but these terms are orthogonalized
+summary(lm(mpg ~ wt + I(wt*wt), data = mtcars))  # uses raw polynomial terms
+
+# It will now print the same results. It won't standardize before generating the polynomial term.
+summary(lm(mpg ~ poly(wt, degree = 2, raw = TRUE), data = mtcars))  # turns polynomials to raw
+```
+Now we define the design matrix and find the beta functions:
+```{r}
+mod <- lm(qsec ~ disp + cyl, data = mtcars)
+X <- data.frame(intercept = rep(1, nrow(mtcars)),
+                disp = mtcars$disp,
+                cyl = mtcars$cyl)
+head(model.matrix(mod, data = mtcars))  # Generates the design matrix from a formula
+```
+We can also pass a formula to the matrix.
+```{r}
+form <- qsec ~ disp + cyl
+head(model.matrix(form, data = mtcars))
+```
+The downside is if we sample our data, we need to sample here too. So it is recommended to use the model. It will deal with our data and create the columns for you.
+```{r}
+mod2 <- lm(qsec ~ disp + cyl, data = mtcars, subset = mtcars$vs == 1)
+summary(mod2)
+
+# Now the outputs will be different because we have sampled our data with mtcars$vs == 1
+dim(model.matrix(form, data = mtcars))
+dim(model.matrix(mod2, data = mtcars))
+
+# We, of course, can do it manually. However, as the variables get more and more, it will be more and more complicated.
+form <- qsec ~ disp*cyl + poly(mpg, degree = 2, raw = TRUE)
+head(model.matrix(form, data = mtcars))
+```
+A brief discussion of type conversions:
+```{r}
+vec <- c("a", "b", "b")
+fvec <- as.factor(vec)  # It will fail, it assigns labels to these numbers, they think them as catogories and give each of them a number
+as.numeric(vec)
+class(fvec) <- "numeric"
+fvec
+```
+So now let's take a look at cyl:
+```{r}
+mtcars$cylf <- as.factor(mtcars$cyl)
+lm(mpg ~ cyl, data = mtcars)  # We have one predictor
+lm(mpg ~ cylf, data = mtcars) 
+# We exclude one catogory as the reference category, where is 4 here, and we will create a dummy variable for the other ones.
+# The incept here is telling what is the difference from the cyl4 when we are in cyl6 and cyl8, which are about 20 and 15.
+lm(mpg ~ as.factor(cyl), data = mtcars)
+
+head(model.matrix(~ cylf, data = mtcars))
+```
+If we want a model for nothing:
+```{r}
+lm(mpg ~ 1, data = mtcars)
+```
+The model.frame is a very different function:
+```{r}
+mod3 <- lm(mpg ~ qsec + cylf + disp + disp:vs, data = mtcars)
+head(model.matrix(mod3, data = mtcars))
+head(model.frame(mod3, data = mtcars))
+# It separates out only the columns needed to fit the model. It does not do the expansions and create a minimal version that is in the model.
+# It is handy to speed things up, we can just use the model.frame to extract the smallest version of data.
+```
+
+## Sep 24
+### Testing models
+We start by exploring the mtcars dataset and fitting a linear model to predict miles per gallon (mpg) based on the number of gears and horsepower:
+```{r}
+# Load mtcars dataset and explore gear distribution
+data(mtcars)
+table(mtcars$gear)
+
+# Convert gear to factor (categorical variable)
+mtcars$gear <- as.factor(mtcars$gear)
+
+# Fit a linear model: mpg ~ gear + hp
+mod <- lm(mpg ~ gear + hp, data = mtcars)
+summary(mod)
+
+# Load multcomp for hypothesis testing
+library(multcomp)
+
+# Perform hypothesis tests on coefficients
+summary(glht(mod, "(Intercept) = 0"))
+summary(glht(mod, "(Intercept) + gear4 = 0"))
+summary(glht(mod, "(Intercept) + gear5 = 0"))
+summary(glht(mod, "gear4 = 0"))
+summary(glht(mod, "gear5 = 0"))
+summary(glht(mod, "gear4 - gear5 = 0"))
+
+# Complex linear combination hypothesis
+summary(glht(mod, "hp - 2*gear5 + (1/4)*gear4 = 17"))
+```
+Next, we explore the relationship between the number of years married and the heights of husbands and wives from a separate dataset:
+```{r}
+# Load husbands_wives dataset and fit a linear model
+hw <- read.csv("data/husbands_wives.csv")
+mod2 <- lm(years_married ~ ht_husband + ht_wife, data = hw)
+summary(mod2)
+
+# Test equality of height coefficients
+summary(glht(mod2, "ht_husband - ht_wife = 0"))
+```
+We now use estimated marginal means (EMMs) to explore the effect of gears on mpg and compare means across gear levels:
+```{r}
+# Load emmeans for estimated marginal means (lsmeans)
+library(emmeans)
+emmeans(mod, ~ gear)
+
+# Additional hypothesis tests
+summary(glht(mod, "(Intercept) + 146.6875*hp = 0"))
+summary(glht(mod, "(Intercept) + gear4 + 146.6875*hp = 0"))
+summary(glht(mod, "(Intercept) + gear5 + 146.6875*hp = 0"))
+
+# Test and compare marginal means by gear level
+test(emmeans(mod, ~ gear))
+pairs(emmeans(mod, ~ gear), adjust = "none")
+
+```
+We can also visualize how the relationship between predictors changes using interaction terms:
+```{r}
+# Load marginaleffects and ggeffects
+library(marginaleffects)
+library(ggeffects)
+
+# Fit a model with an interaction term: mpg ~ gear * hp
+mod3 <- lm(mpg ~ gear * hp, data = mtcars)
+summary(mod3)
+
+# Hypothesis tests for interaction effects
+summary(glht(mod3, "hp = 0"))
+summary(glht(mod3, "hp + gear4:hp = 0"))
+summary(glht(mod3, "hp + gear5:hp = 0"))
+
+# Test individual and comparative interaction terms
+summary(glht(mod3, "gear4:hp = 0"))
+summary(glht(mod3, "gear5:hp = 0"))
+summary(glht(mod3, "gear4:hp - gear5:hp = 0"))
+
+# Plot interaction effects using emmip and interact_plot
+emmip(mod3, gear ~ hp, at = list(hp = c(100, 150, 200, 250)))
+
+library(interactions)
+interact_plot(mod3, pred = "hp", modx = "gear")
+```
+We can also fit a generalized linear model (GLM) for binary outcomes, such as automatic vs. manual transmission (am), and explore interaction terms:
+```{r}
+# Fit a generalized linear model: am ~ gear * hp (binary outcome)
+mod4 <- glm(am ~ gear * hp, data = mtcars, family = binomial)
+summary(mod4)
+
+# Predictions and marginal means for glm
+head(predict(mod4))
+emmeans(mod4, ~ gear)
+
+# Plot interaction effects for glm
+emmip(mod4, gear ~ hp, at = list(hp = c(100, 150, 200, 250)))
+```
+Lastly, we explore mixed effects models, which allow us to model data with hierarchical structure or random effects:
+```{r}
+# Load libraries for mixed effects models
+library(lme4)
+library(lmerTest)
+
+# Explore InstEval dataset
+head(InstEval)
+
+# Fit a mixed effects model with random intercept
+mod5 <- lmer(y ~ service + (1 | s), data = InstEval)
+summary(mod5)
+
+# Predictions from the mixed effects model
+head(predict(mod5))
+```
+### SQLite
+This section demonstrates how to interact with SQLite databases in R using the DBI and RSQLite libraries. We connect to the Lahman baseball database and run queries to retrieve data.
+```{r}
+# Load necessary libraries for database interaction
+library(DBI)
+library(RSQLite)
+
+# Connect to the Lahman database
+lahman <- dbConnect(SQLite(), "data/lahman_1871-2022.sqlite")
+
+# Check the connection object
+lahman
+
+# List the available tables in the database
+dbListTables(lahman)
+
+# List the fields (columns) in the 'People' table
+dbListFields(lahman, "People")
+
+# Retrieve and display some data from the 'People' table
+dbGetQuery(lahman, "SELECT playerID FROM people LIMIT 6")
+head(dbGetQuery(lahman, "SELECT playerID FROM people"))
+```
+
+## Sep 26
+### More on SQL
+Continuing from last time, this section explores database querying and SQL operations using the Lahman baseball database through R's DBI and RSQLite libraries.
+```{r}
+# Load libraries for SQLite database interaction
+library(DBI)
+library(RSQLite)
+
+# Connect to the Lahman database
+lahman <- dbConnect(SQLite(), "data/lahman_1871-2022.sqlite")
+
+# Query the 'batting' table and display first 5 rows
+dbGetQuery(lahman, "
+SELECT *
+  FROM batting
+ LIMIT 5           
+")
+
+# Define a query function to simplify SQL queries
+gg <- function(query) {
+  dbGetQuery(lahman, query)
+}
+
+# Example usage of the query function
+gg("
+SELECT *
+  FROM batting
+ LIMIT 5           
+")
+```
+We can inspect the structure of the database by listing tables and fields:
+```{r}
+# List tables in the database
+dbListTables(lahman)
+
+# Get the number of fields in the 'HallOfFame' table
+length(dbListFields(lahman, "HallOfFame"))
+
+# Count the number of player IDs in the 'HallOfFame' table
+gg("
+SELECT COUNT(playerid)
+  FROM halloffame
+")
+
+# Query player IDs by specific year ranges
+gg("
+SELECT COUNT(playerid)
+  FROM halloffame
+ WHERE (yearid > 2004 AND yearid < 2010) OR yearid > 2015
+")
+
+# Retrieve player IDs and years from 'HallOfFame' table
+table <- gg("
+SELECT playerid, yearID
+  FROM halloffame
+")
+
+# Filter the table to specific year ranges
+nrow(table[(table$yearid > 2004 & table$yearid < 2010) | table$yearid > 2015, ])
+```
+We can also explore string filtering, grouping, and aggregations with SQL queries:
+```{r}
+# List fields from the 'people' table
+dbListFields(lahman, "people")
+
+# Count players with last name 'Griffey'
+gg("
+SELECT COUNT(nameFirst)
+  FROM people
+ WHERE nameLast = 'Griffey'
+ LIMIT 5
+")
+
+# Count players with last names 'Griffey' or 'Aaron'
+gg("
+SELECT COUNT(nameFirst)
+  FROM people
+ WHERE nameLast IN ('Griffey', 'Aaron')
+")
+
+# Retrieve last names matching a pattern
+gg("
+SELECT nameLast
+  FROM people
+ WHERE nameLast LIKE '%iff%'
+ LIMIT 5
+")
+```
+We use sorting, grouping, and aggregation functions to summarize statistics:
+```{r}
+# List fields in the 'Batting' table
+dbListFields(lahman, "Batting")
+
+# Get players with more than 10 home runs, sorted by HR in descending order
+gg("
+SELECT playerid, hr
+  FROM batting
+ WHERE hr > 10
+ ORDER BY -HR
+ LIMIT 10
+")
+
+# Sum of home runs per player after 2010
+gg("
+SELECT playerid AS name, SUM(hr) AS sum_hr
+  FROM Batting
+ WHERE yearid > 2010
+ GROUP BY playerid
+ ORDER BY -sum_hr
+ LIMIT 5
+")
+
+# Players with total HRs > 340 after 2010
+gg("
+SELECT playerid AS name, SUM(hr) AS sum_hr
+  FROM Batting
+ WHERE yearid > 2010
+ GROUP BY playerid
+ HAVING sum_hr > 340
+ ORDER BY -sum_hr
+ LIMIT 5
+")
+```
+We explore joins to combine data across tables:
+```{r}
+# Inner join between 'batting' and 'people' tables
+gg("
+SELECT batting.playerid AS pid, batting.hr, people.namelast
+  FROM batting 
+ INNER JOIN people 
+            ON batting.playerid = people.playerid
+ LIMIT 5
+")
+
+# Join with aliasing for tables
+gg("
+SELECT b.playerid AS pid, b.hr, p.namelast
+  FROM batting AS b
+ INNER JOIN people AS p 
+            ON b.playerid = p.playerid
+ LIMIT 5
+")
+```
+We also use nested queries for more complex operations:
+```{r}
+# Sum HRs per player with inner join and filter by year
+gg("
+SELECT p.playerid, SUM(b.hr) AS sum_hr
+  FROM Batting AS b
+ INNER JOIN 
+       (SELECT playerid, namefirst, namelast
+          FROM people) AS p
+          ON b.playerid = p.playerid
+ WHERE yearid > 2010
+ GROUP BY p.playerid
+ ORDER BY -sum_hr
+ LIMIT 5
+")
+```
+Lastly, we explore college and award data through joins and aggregations:
+```{r}
+# Find last year a player appeared in college
+gg("
+SELECT playerid, schoolid, MAX(yearID) AS lastyear
+  FROM collegeplaying
+ GROUP BY playerid 
+ LIMIT 10
+")
+
+# Retrieve award winners with maximum year of college attendance
+gg("
+SELECT a.playerid, c.schoolid
+  FROM collegeplaying AS c
+  LEFT JOIN (
+       SELECT playerid, awardid
+         FROM awardsplayers
+        WHERE awardid LIKE 'Rookie%'
+       ) AS a ON a.playerid = c.playerid
+ GROUP BY a.playerid 
+ HAVING c.yearid = MAX(c.yearid)
+ LIMIT 10
+")
+
+# Count of players by school who won Rookie awards
+gg("
+SELECT schoolID, count(schoolID) AS count
+  FROM (SELECT a.playerid, c.schoolid
+          FROM collegeplaying AS c
+          LEFT JOIN (
+               SELECT playerid, awardid
+                 FROM awardsplayers
+                WHERE awardid LIKE 'Rookie%'
+                   ) AS a ON a.playerid = c.playerid
+         GROUP BY a.playerid 
+        HAVING c.yearid = MAX(c.yearid))
+ GROUP BY schoolID
+ ORDER BY -count
+ LIMIT 5
+")
+```
+### String Manipulation in R
+```{r}
+# Checking the type of strings
+typeof("abc")
+typeof('abc')
+
+# Using quotes within strings
+'this is a "scare quote"'
+"this is a 'scare quote'"
+
+# Printing with newlines and escape characters
+print("abc\ndef")
+cat("abc\ndef")
+
+# Using backslashes
+print("I want a backslash: \\")
+cat("I want a backslash: \\")
+```
+
+### String Operations and Pattern Matching
+```{r}
+# Simple string operations
+s <- "abcdefghi"
+substr(s, 3, 5) <- "XYZ"
+s
+
+# grep and grepl for pattern matching
+grep("abc", "abcdefgfh")
+grepl("abc", c("abcdef", "defghi"))
+
+# Read and manipulate a list of powers from a URL
+powers <- tolower(readLines("https://raw.githubusercontent.com/nolshru/SuperpowerRandSelector/main/PlaintextSuperpowerList.txt"))
+powers[grep("arts", powers)]
+```
+
+### Regular Expressions in R
+`Regular Expressions in R
+```{r}
+# Find words with specific patterns
+head(powers[grepl("^q", powers)])
+head(powers[grepl("q[ui]e", powers)])
+head(powers[grepl("[aeiou]{2,4}", powers)])
+
+# Use quantifiers and wildcards
+head(powers[grepl("p[e]+d", powers)])
+head(powers[grepl("p.*d", powers)])
+
+# Match specific patterns
+head(grepl("a\\.c", c("abc", "a.c")))
+```
+
+## Oct 01
+### SQL Queries and String Manipulation in R
+This lecture demonstrates SQL querying using the Sakila database and string operations in R.
+```{r}
+# Load required libraries
+library(DBI)
+library(RSQLite)
+
+# Connect to the Sakila database
+sakila <- dbConnect(SQLite(), "data/sakila_master.db")
+
+# List all tables in the database
+dbListTables(sakila)
+
+# Define a query function
+gg <- function(query) {
+  dbGetQuery(sakila, query)
+}
+
+# Query to join rental and inventory tables
+gg("
+SELECT i.film_id
+  FROM rental AS r
+  LEFT JOIN inventory AS i ON i.inventory_id = r.inventory_id
+ LIMIT 50
+")
+
+# Query with nested joins and ordering
+gg("
+SELECT fa.actor_id, ri.film_id, ri.customer_id
+  FROM film_actor AS fa
+ RIGHT JOIN (
+      SELECT i.film_id, r.customer_id
+        FROM rental AS r
+        LEFT JOIN inventory AS i ON i.inventory_id = r.inventory_id
+      ) AS ri ON ri.film_id = fa.film_id
+ ORDER BY ri.film_id, ri.customer_id, fa.actor_id
+ LIMIT 50
+")
+
+# Query to join actor and rental data
+gg("
+SELECT a.first_name, a.last_name, fari.film_id, fari.customer_id
+  FROM actor AS a
+ RIGHT JOIN (
+      SELECT fa.actor_id, ri.film_id, ri.customer_id
+        FROM film_actor AS fa
+       RIGHT JOIN (
+            SELECT i.film_id, r.customer_id
+              FROM rental AS r
+              LEFT JOIN inventory AS i ON i.inventory_id = r.inventory_id
+            ) AS ri ON ri.film_id = fa.film_id
+      ) AS fari ON fari.actor_id = a.actor_id
+ LIMIT 5
+")
+
+# Query to count actor appearances
+gg("
+SELECT COUNT(a.actor_id) AS count, a.first_name, a.last_name
+  FROM actor AS a
+ RIGHT JOIN (
+      SELECT fa.actor_id, ri.film_id, ri.customer_id
+        FROM film_actor AS fa
+       RIGHT JOIN (
+            SELECT i.film_id, r.customer_id
+              FROM rental AS r
+              LEFT JOIN inventory AS i ON i.inventory_id = r.inventory_id
+            ) AS ri ON ri.film_id = fa.film_id
+      ) AS fari ON fari.actor_id = a.actor_id
+ GROUP BY a.actor_id
+ ORDER BY -count
+ LIMIT 5
+")
+```
+### String Operations in R
+```{r}
+# Basic string operations
+"abc"
+'abc'
+typeof("abc")
+typeof('abc')
+
+# Using quotes within strings
+'this is a "scare quote"'
+"this is a 'scare quote'"
+
+# Printing with escape characters
+print("abc\ndef")
+cat("abc\ndef")
+print("abc\"def")
+cat("abc\"def")
+
+# Backslashes in strings
+print("I want a backslash: \\")
+cat("I want a backslash: \\")
+cat('abc\n')
+```
+### Working with Strings and Linear Models
+```{r}
+# Simple linear model with the iris dataset
+lm(Petal.Length ~ Petal.Width, data = iris)
+
+# Using paste to concatenate strings
+paste("a", "b")
+paste(c("a", "b"))
+paste(c("a", "b"), c("c", "d"))
+paste(c("a", "b"), c("c", "d"), sep = "X")
+paste(c("a", "b"), c("c", "d"), collapse = "__")
+paste(c("a", "b"), c("c", "d"), collapse = "__", sep = "X")
+
+# Measuring string length
+length("abcdef")
+nchar("abcdef\n")
+
+# Substring operations
+s <- "abcdefghi"
+substr(s, 3, 5)
+substr(s, 3, 5) <- "XYZ"
+s
+substr(s, 3, 5) <- "XYfDSJFIDLSJFLKDJSLFZ"
+s
+substr(s, 3, 5) <- "A"
+s
+```
+### Pattern Matching with grep and grepl
+```{r}
+# Basic pattern matching
+grep("abcdefghi", "def")
+grep("abc", "abcdefgfh")
+grepl("abc", "abcdefgfh")
+
+# Matching across multiple strings
+grepl("abc", c("abcdef", "defghi"))
+grep("abc", c("abcdef", "defghi"))
+grep("ghi", c("abcdef", "defghi"))
+
+# Using lapply with grep and grepl
+grep(c("abc", "ghi"), c("abcdef", "defghi"))
+lapply(c("abc", "ghi"), FUN = grepl, c("abcdef", "defghi"))
+
+# Downloading and working with a list of superpowers
+powers <- readLines("https://raw.githubusercontent.com/nolshru/SuperpowerRandSelector/main/PlaintextSuperpowerList.txt")
+powers <- tolower(powers)
+
+grep("arts", powers)
+powers[grep("arts", powers)]
+powers[grepl("arts", powers)]
+
+# Creating a data frame and adding a logical column
+pdata <- data.frame(powers = powers)
+head(pdata)
+pdata$isart <- grepl("arts", powers)
+
+# Conditional example
+# if (grepl("a", c("dog", "cat"))) { print("yes") }
+
+# Checking if patterns exist
+length(grep("ninpo arts", powers)) > 0
+sum(grepl("ninpo arts", powers)) > 0
+"ninpo arts" %in% powers
+```
+### Advanced String Replacement and Splitting
+```{r}
+# Replacing patterns in strings
+artpowers <- powers[grepl("arts", powers)]
+sub("art", "DOG", artpowers)
+DOGpowers <- gsub("art", "DOG", artpowers)
+DOGpowers
+artpowers
+
+# Splitting strings
+strsplit("abcbd", "b")[[1]]
+head(strsplit(powers, "art"))
+head(strsplit(powers, " "))
+head(strsplit(powers, ""))
+
+# Using regex to find patterns
+powers[grepl("q", powers)]
+powers[grepl("^q", powers)]
+powers[grepl("q", powers)]
+
+# Combining results with specific patterns
+c(powers[grepl("qu", powers)], powers[grepl("qi", powers)])
+powers[grepl("q[ui]e", powers)]
+powers[grepl("q[abcdefghjklmnopqrstvwxyz]", powers)]
+powers[grepl("q[^ui]", powers)]
+
+# Matching vowel sequences
+head(powers[grepl("[aeiou][aeiou]", powers)])
+head(powers[grepl("[aeiou]{2,4}", powers)])
+
+# Using quantifiers in regex
+head(powers[grepl("p[e]{1,2}d", powers)])
+head(powers[grepl("p[e]+d", powers)])
+head(powers[grepl("p[e]*d", powers)])
+head(powers[grepl("p[e]?d", powers)])
+
+# Matching with wildcards and specific lengths
+head(powers[grepl("p.*d", powers)])
+head(powers[grepl("p.{2}d", powers)])
+
+# Matching literal dots
+grepl("a.c", c("abc", "a.c"))
+grepl("a\\.c", c("abc", "a.c"))
+```
+
+## Oct 03
+
+### Capture groups
+```{r}
+powers <- readLines("https://raw.githubusercontent.com/nolshru/SuperpowerRandSelector/main/PlaintextSuperpowerList.txt")
+powers <- tolower(powers)
+```
+
+We can use the following method to find some superpowers:
+```{r}
+grep("speed", powers)
+powers[grep("d{2}", powers)]
+
+head(powers[grep("(.)\\1", powers)])  # Two word super powers
+head(powers[grep("(.)\\1(.)\\2", powers)])  # Three word super powers
+```
+
+And now we want to find the string patterns:
+```{r}
+a <- "NY Mets"
+pattern <- "M..s"
+grepl(pattern, a)  # If we have this string a in our pattern.
+regexpr(pattern, a)  # Where it is?
+regmatches(a, regexpr(pattern, a))  # What is the match exactly?
+```
+
+```{r}
+sub("^[A-Z]+, ", "", a)  # Draw the string of all kinds
+b <- sub(".*.(M..s).*", "\\1", a)
+
+sub(".*(M..s).*|.*", "\\1", a)  # Draw the string that has pattern M..s
+```
+
+## Oct 08
+### Pipes and Data Manipulation in R
+This lecture demonstrates how to use pipes, the tidyverse, and data wrangling functions for efficient data manipulation.
+```{r}
+# Load the tidyverse library
+library(tidyverse)
+
+# Example of using pipes for data transformation
+1:3 %>% mean
+
+1:3 %>% mean %>% sqrt
+sqrt(mean(1:3))
+
+# Fit a linear model using a pipe
+mtcars %>% lm(mpg ~ ., data = .)
+
+# Replace "a" with "X" in "abc" using gsub within a pipe
+"abc" %>% gsub("a", "X", .)
+
+# Use pipes to modify variables
+x <- (-1):5
+x <- x %>% abs
+
+# Using magrittr for in-place updates
+library(magrittr)
+x %<>% abs
+
+# Pipes and the forward pipe operator in base R
+x |> mean()
+x %>% mean
+#x |> mean
+
+# Using the new pipe operator with a linear model
+mtcars |> lm(mpg ~ ., data = _)
+```
+### Data Import and Wrangling with Tidyverse
+```{r}
+# Load the dataset
+recs <- read_delim("data/recs2009_public.csv")
+recs
+
+# Selecting specific columns
+recs[, c("REPORTABLE_DOMAIN", "TYPEHUQ", "NWEIGHT")]
+
+# Creating a new dataframe with selected columns
+recs_analysis <- recs %>% 
+  select(REPORTABLE_DOMAIN, TYPEHUQ, NWEIGHT)
+
+# Demonstrating different ways to drop columns
+recs_analysis %>% select(-TYPEHUQ) %>% head
+recs_analysis %>% select(!TYPEHUQ) %>% head
+recs_analysis %>% select(!(TYPEHUQ | NWEIGHT)) %>% head
+recs_analysis %>% select(!c(TYPEHUQ, NWEIGHT)) %>% head
+
+# Select columns based on patterns
+recs_analysis %>% select(starts_with("T"))
+recs_analysis %>% select(contains("T"))
+recs_analysis %>% select(matches("T$"))
+
+```
+### Renaming and Mutating Variables
+```{r}
+# Renaming columns
+recs_analysis <- recs %>% 
+  select(REPORTABLE_DOMAIN, TYPEHUQ, NWEIGHT) %>% 
+  rename(state = REPORTABLE_DOMAIN,
+         type = TYPEHUQ,
+         weight = NWEIGHT)
+
+# Creating new columns using mutate
+recs_analysis %>% 
+  mutate(type2 = type - 1, constant = 1)
+
+recs_analysis %>% 
+  mutate(type = as.factor(type))
+
+```
+### Conditional Logic with switch
+```{r}
+# Using switch statements
+switch(2, "a", "b", "c")
+# switch(2:3, "a", "b", "c")
+
+# Using sapply with switch
+sapply(2:3, function(x) switch(x, "a", "b", "c"))
+sapply(2:3, switch, "a", "b", "c")
+
+# Function to convert state numbers to names
+convert_states <- function(statenum) {
+  switch(statenum,
+         "CT, ME, NH, RI, VT", "MA", "NY", "NJ", "PA",
+         "IL", "IN, OH", "MI", "WI", "IA, MN, ND, SD",
+         "KS, NE", "MO", "VA", "DE, DC, MD, WV", "GA",
+         "NC, SC", "FL", "AL, KY, MS", "TN",
+         "AR, LA, OK", "TX", "CO", "ID, MT, UT, WY", "AZ",
+         "NV, NM", "CA", "AK, HI, OR, WA")
+}
+convert_states(2)
+
+# Function to convert housing types
+convert_types <- function(typenum) {
+  switch(typenum,
+         "MobileHome",
+         "SingleFamilyDetached",
+         "SingleFamilyAttached",
+         "ApartmentFew",
+         "ApartmentMany")
+}
+convert_types(2)
+
+sapply(1:5, convert_types)
+
+# Apply state and type conversions
+recs_str <- recs_analysis %>% 
+  mutate(state = sapply(state, convert_states),
+         type = sapply(type, convert_types))
+
+```
+### Grouping and Reshaping Data
+```{r}
+# Grouping and summarizing data
+recs_collapse <- recs_str %>% 
+  group_by(state, type) %>% 
+  summarize(homes = sum(weight)) %>% 
+  ungroup()
+
+# Pivot data with tidyr
+library(tidyr)
+recs_reshaped <- recs_collapse %>% 
+  pivot_wider(names_from = type, values_from = homes)
+
+recs_reshaped
+
+# Calculate totals and normalize values by state
+recs_reshaped %>% 
+  group_by(state) %>% 
+  mutate(total = sum(ApartmentFew, ApartmentMany, MobileHome, 
+                     SingleFamilyAttached, SingleFamilyDetached, na.rm = TRUE),
+         ApartmentFew = ApartmentFew / total,
+         ApartmentMany = ApartmentMany / total,
+         MobileHome = MobileHome / total,
+         SingleFamilyAttached = SingleFamilyAttached / total,
+         SingleFamilyDetached = SingleFamilyDetached / total) %>% 
+  arrange(-SingleFamilyAttached) %>% 
+  select(total) %>% 
+  ungroup()
+
+```
+### Working with Tibbles and Data Frames
+```{r}
+# Creating data frames and tibbles
+data.frame(a = 1:3, b = 4:6)
+tibble(a = 1:3, b = 4:6)
+
+# Using special column names in tibbles
+tt <- tibble("my var" = 1:3, "2ndvar" = 4:6)
+tt %>% select(`my var`)
+
+# Comparing data frames and tibbles
+df <- data.frame(a = 1:3)
+tb <- tibble(a = 1:3)
+row.names(df) <- c("a", "b", "c")
+df
+row.names(tb) <- c("a", "b", "c")
+
+# Handling mismatched dimensions
+data.frame(a = 1:6, b = 1:2)
+tibble(a = 1:6, b = 1)
+
+# Accessing columns in data frames and tibbles
+df$a
+df[, "a"]
+tb$a
+tb %>% select(a)
+df[, "a", drop = FALSE]
+```
+
+## Oct 10
+### Time Series Visualization and Analysis
+This lecture demonstrates how to analyze and visualize time series data using base R plotting functions and ggplot2.
+```{r}
+# Load the dataset and convert the date column to Date format
+nnmaps <- read.csv("data/chicago-nmmaps.csv")
+nnmaps$date <- as.Date(nnmaps$date)
+
+# Plot temperature over time using base R
+plot(nnmaps$temp ~ nnmaps$date)
+plot(nnmaps$date, nnmaps$temp)
+
+# Plot ozone (O3) and PM10 levels over time
+plot(nnmaps$o3 ~ nnmaps$date)
+plot(nnmaps$pm10 ~ nnmaps$date)
+
+# Avoid using attach (for demonstration only, not recommended)
+#attach(nnmaps)  # DO NOT USE THIS!
+#o3
+#detach(nnmaps)
+
+# Using 'with' for concise plotting
+with(nnmaps, plot(o3 ~ date))
+with(nnmaps, {
+  print(mean(o3))
+  plot(temp ~ date)
+})
+
+# Plot ozone levels by season
+
+nnmaps$season <- factor(nnmaps$season,
+                        levels = c("Winter", "Spring", "Summer", "Autumn"))
+with(nnmaps,
+     plot(o3 ~ date, col = season))
+# Adding a legend
+with(nnmaps, plot(o3 ~ date, col = season))
+with(nnmaps, legend("topleft", levels(season), col = unique(season), pch = 1))
+
+# Customizing plot symbols
+with(nnmaps, {
+  plot(o3 ~ date, col = season, pch = "*")
+  legend("topleft", levels(season), col = unique(season), pch = 8)
+})
+```
+### Aggregating and Plotting Monthly Data
+```{r}
+# Aggregate data by year and month
+nnmaps_monthly <- aggregate(nnmaps, by = list(nnmaps$year, nnmaps$month_numeric), FUN = mean, na.rm = TRUE)
+str(nnmaps)
+
+# Order the aggregated data
+nnmaps_monthly <- nnmaps_monthly[order(nnmaps_monthly$year, nnmaps_monthly$month_numeric), ]
+
+# Plot aggregated ozone levels over time
+with(nnmaps_monthly, plot(o3 ~ date, type = "l"))
+
+```
+### Plotting with Custom Styles and Parameters
+```{r}
+# Overlaying plots with monthly data
+with(nnmaps, plot(o3 ~ date, col = "lightgrey"))
+with(nnmaps_monthly, lines(o3 ~ date, lwd = 3, col = "green"))
+
+# Customizing plot foreground color
+with(nnmaps, plot(o3 ~ date, col = "lightgrey", fg = "blue"))
+
+# Save current graphical parameters
+oldpar <- par(no.readonly = TRUE)
+
+# Set new parameters and plot
+par(col = "red", pch = 5, fg = "green")
+with(nnmaps, plot(temp ~ date))
+with(nnmaps, plot(pm10 ~ date, pch = 10))
+
+# Reset to original parameters
+par(oldpar)
+
+# Overlaying model predictions with confidence intervals
+nnmaps <- nnmaps[order(nnmaps$date), ]
+nnmaps$day <- seq_len(length(nnmaps$date)) / 365
+nnmaps$sinday <- sin(2 * pi * nnmaps$day)
+nnmaps$cosday <- cos(2 * pi * nnmaps$day)
+mod <- lm(o3 ~ sinday + cosday, data = nnmaps)
+preds <- data.frame(predict(mod, interval = "prediction", newdata = nnmaps))
+
+with(nnmaps, plot(o3 ~ date, col = "lightgrey"))
+with(nnmaps_monthly, lines(o3 ~ date, lwd = 3, col = "darkgreen"))
+lines(preds$fit ~ nnmaps$date, lwd = 3, col = "red")
+
+# Plot with lower and upper bounds
+preds$o3 <- nnmaps$o3
+preds$date <- nnmaps$date
+with(preds, {
+  plot(o3 ~ date, col = "lightgrey")
+  lines(nnmaps_monthly$o3 ~ nnmaps_monthly$date, lwd = 3, col = "darkgreen")
+  lines(fit ~ date, lwd = 3, col = "red")
+})
+with(preds, lines(lwr ~ date, lty = 2))
+with(preds, lines(upr ~ date, lty = 2))
+with(preds, polygon(c(date, rev(date)), c(upr, rev(lwr)), col = rgb(0, 0, 1, .2)))
+text(100, 50, "hi!")
+
+# Create a blank plot with white points
+plot(preds$o3 ~ preds$date, col = "white")
+```
+### Multi-Panel Plots and Saving Graphics
+```{r}
+# Multi-panel plotting, following will be too large
+#par(mfrow = c(2, 1))
+#with(nnmaps, {
+#  plot(o3 ~ date)
+#  plot(temp ~ date)
+#})
+
+# Customizing margins and layout
+par(mfrow = c(2, 1), oma = c(1, 1, 0, 0) + .1, mar = c(0, 3, 0, 0) + .1, mgp = c(2, 1, 0))
+with(nnmaps, {
+  plot(o3 ~ date, xaxt = "no")
+  par(mar = c(1, 3, 0, 0) + .1)
+  plot(temp ~ date)
+})
+
+# Saving plots as PNG and PDF
+#png("~/Desktop/myplot.png")
+#with(nnmaps, {
+#  plot(o3 ~ date, xaxt = "no")
+#  par(mar = c(1, 3, 0, 0) + .1)
+#  plot(temp ~ date)
+#})
+#dev.off()
+
+#pdf("~/Desktop/mypdfplot.pdf")
+#with(nnmaps, {
+#  plot(o3 ~ date, xaxt = "no")
+#  par(mar = c(1, 3, 0, 0) + .1)
+#  plot(temp ~ date)
+#})
+#dev.off()
+```
+### Visualization with ggplot2
+```{r}
+# Load ggplot2
+library(ggplot2)
+
+# Create a ggplot object and add layers
+myg <- ggplot(nnmaps, aes(x = date, y = o3, color = season))
+ggplot(nnmaps, aes(x = date, y = o3, color = season)) + geom_point()
+
+# Adjusting colors directly
+ggplot(nnmaps, aes(x = date, y = o3, color = "red")) + geom_point()
+ggplot(nnmaps, aes(x = date, y = o3)) + geom_point(color = "red")
+
+# Adding points and lines to plots
+gg <- ggplot(nnmaps, aes(x = date, y = o3))
+gg + geom_point()
+gg + geom_line()
+
+# Combining points and lines in ggplot2
+gg2 <- ggplot(nnmaps, aes(x = date, y = o3)) + geom_point()
+gg2 + geom_line()
+
+# Using ggplot2 with layered graphics
+ggplot() + 
+  geom_point(nnmaps, mapping = aes(x = date, y = o3, color = season)) + 
+  geom_line()
+```
+
+## Oct 17
+### More on plotting
+As in last lecture, we import the dataset and then plot another colomn in red:
+```{r}
+library(ggplot2)
+nnmaps <- read.csv("data/chicago-nmmaps.csv")
+nnmaps$date <- as.Date(nnmaps$date)
+
+nnmaps$season <- factor(nnmaps$season,
+                        levels = c("Winter", "Spring",
+                                   "Summer", "Autumn"))
+
+ggplot(nnmaps, aes(x=date, y=o3))+
+  geom_point()+
+  geom_point(aes(y=temp), color='red')
+```
+If we want to draw multiple plots on the same page, then we can use facet:
+```{r}
+monthtable<-data.frame(table(nnmaps$month))
+names(monthtable) <- c("month", "count")
+
+ggplot(nnmaps, aes(x=date, y=o3))+
+  geom_point()+
+  facet_wrap("month")
+```
+
+If we want to change the scale, then we set the scale, also we can set the color:
+```{r}
+ggplot(nnmaps, aes(x=date, y=o3, color=season))+
+  geom_point()+
+  scale_y_reverse()+
+  scale_x_date()
+```
+Of course we can manually set the colors:
+```{r}
+ggplot(nnmaps, aes(x=date, y=o3, color=season))+
+  geom_point()+
+  scale_y_reverse()+
+  scale_x_date()+
+  scale_color_manual(values=c("red","green","blue","yellow"))
+```
+We can change the theme of our plotting, for example if we want the background of our plot to be just white:
+```{r}
+ggplot(nnmaps, aes(x=date, y=o3, color=season))+
+  geom_point()+
+  theme_bw()
+```
+Let's look at another dataset and check the plots:
+```{r}
+data(mpg)
+
+ggplot(mpg, aes(x=cty,y=hwy))+  # The plot looks binned
+  geom_point()
+
+ggplot(mpg, aes(x=cty,y=hwy))+  # The plot now is like a scatter plot
+  geom_jitter()
+
+ggplot(mpg, aes(x=cty,y=hwy))+  # Now each point is weighed by its count
+  geom_count()
+```
+If we want to plot something in multiple dimensions now:
+```{r}
+ggplot(mpg, aes(x=cty,y=hwy))+ 
+  geom_jitter()+
+  facet_grid(vars(cyl), vars(drv))  # We can use the facet
+
+mpg$cyl <- as.factor(mpg$cyl)
+ggplot(mpg, aes(x=cty,y=hwy, color=class, size=cyl, shape=drv))+ 
+  geom_jitter()
+
+```
+
+
+
+
+
