@@ -1,0 +1,290 @@
+---
+title: "STATS 506"
+subtitle: "Problem Set 3"
+author: "Sky Shi"
+date-modified: today
+format:
+  html:
+    css: style.css
+    toc: true
+    toc-depth: 5
+    toc-expand: 2
+    embed-resources: true
+editor: visual
+---
+
+The link to the problem set 4 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet4>, as a sub-folder of the STATS 506 repository.
+
+## Problem 1 - Tidyverse
+
+### a. Tables for departure delay and arrival delay
+```{r}
+# Package installed by install.packages("nycflights13")
+# Load the necessary packages, suppressing the warning messages about conflicting functions
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(nycflights13)  # This package includes flights and airports data
+})
+```
+Generate the table for mean and median departure delay per airport:
+```{r}
+# Create the summary table of departure delays
+departure_delay_summary <- flights %>%
+  left_join(airports, by = c("origin" = "faa")) %>%  # Join with the airports dataset to include airport names
+  rename(airport_name = name) %>%  # Rename for clarity
+  group_by(airport_name) %>%  # Group by airport name to calculate delay statistics
+  summarise(
+    mean_dep_delay = mean(dep_delay, na.rm = TRUE),  # Calculate mean delay
+    median_dep_delay = median(dep_delay, na.rm = TRUE),  # Calculate median delay
+    flight_count = n()  # Count the number of flights
+  ) %>%
+  filter(flight_count >= 10) %>%  # Exclude airports with fewer than 10 flights
+  arrange(desc(mean_dep_delay)) %>%  # Order by descending mean departure delay
+  rename(  # Format the output as a nicely labeled tibble
+    "Airport Name" = airport_name,
+    "Mean Departure Delay (min)" = mean_dep_delay,
+    "Median Departure Delay (min)" = median_dep_delay,
+    "Number of Flights" = flight_count
+  )
+
+# Print all rows of departure delay table
+print(departure_delay_summary, n = Inf)
+```
+Generate the table for mean and median arrival delay per airport:
+```{r}
+# Create the summary table of arrival delays
+arrival_delay_summary <- flights %>%
+  left_join(airports, by = c("dest" = "faa")) %>%  # Join with the airports dataset to include airport names
+  rename(airport_name = name) %>%  # Rename for clarity
+  group_by(airport_name) %>%  # Group by airport name to calculate delay statistics
+  summarise(
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),  # Calculate mean arrival delay
+    median_arr_delay = median(arr_delay, na.rm = TRUE),  # Calculate median arrival delay
+    flight_count = n()  # Count the number of flights
+  ) %>%
+  filter(flight_count >= 10) %>%  # Exclude destinations with fewer than 10 flights
+  arrange(desc(mean_arr_delay)) %>%  # Order by descending mean arrival delay
+  rename(  # Format the output as a nicely labeled tibble
+    "Airport Name" = airport_name,
+    "Mean Arrival Delay (min)" = mean_arr_delay,
+    "Median Arrival Delay (min)" = median_arr_delay,
+    "Number of Flights" = flight_count
+  )
+
+# Print all rows of the arrival delay table
+print(arrival_delay_summary, n = Inf)
+```
+
+### b. Flights with the fastest average speed
+```{r}
+# Calculate the average speed (in MPH) for each aircraft model using flights data
+fastest_aircraft <- flights %>%
+  mutate(speed_mph = distance / (air_time / 60)) %>%  # Calculate speed in MPH
+  group_by(tailnum) %>%  # Group by aircraft model (tail number) to summarize
+  summarise(
+    avg_speed = mean(speed_mph, na.rm = TRUE),  # Calculate average speed, removing NA values
+    num_flights = n()  # Count the number of flights for each model
+  ) %>%
+  arrange(desc(avg_speed)) %>%  # Order by descending average speed to find the fastest
+  rename(  # Format the output as a nicely labeled tibble
+    `Aircraft Model` = tailnum,
+    `Average Speed (MPH)` = avg_speed,
+    `Number of Flights` = num_flights
+  ) %>%
+  slice(1)  # Select the aircraft with the highest average speed
+
+# Print the tibble with 1 row (fastest aircraft)
+print(fastest_aircraft)
+```
+
+## Problem 2 - get_temp()
+```{r}
+# Load data
+nnmaps <- read.csv("../data/chicago-nmmaps.csv")
+```
+
+```{r}
+# Define the get_temp() function
+#' Computes the average temperature for a specified month and year from the provided dataset.
+#' @param month Numeric (1-12) or string (e.g., "Apr" or "November") for the month.
+#' @param year Numeric value for the year, between 1997 and 2000.
+#' @param data Data frame containing temperature data with columns 'temp', 'year', and 'month_numeric'.
+#' @param celsius Logical, whether to return temperature in Celsius. Default is FALSE (Fahrenheit).
+#' @param average_fn Function for averaging, default is mean.
+#' @return Numeric value of the computed temperature or an error if input is invalid.
+get_temp <- function(month, year, data, celsius = FALSE, average_fn = mean) {
+  
+  # Validate and convert month input
+  if (is.numeric(month)) {
+    # Check if numeric month is within valid range
+    if (month %in% 1:12) {
+      month_num <- month
+    } else {
+      stop("Invalid month input. Provide a numeric month between 1 and 12, or a valid abbreviation (e.g., 'Jan') or full name (e.g., 'January').")
+    }
+  } else if (is.character(month)) {
+    # Convert string month to numeric, checking both abbreviations and full names
+    month_num <- match(tolower(month), c(tolower(month.abb), tolower(month.name)))
+    if (is.na(month_num)) {
+      stop("Invalid month input. Provide a valid abbreviation (e.g., 'Jan') or full name (e.g., 'January').")
+    }
+    # Adjust for full month names that match the second half of the vector
+    if (month_num > 12) {
+      month_num <- month_num - 12
+    }
+  } else {
+    stop("Invalid month input. Provide a numeric (1-12), abbreviation, or full month name.")
+  }
+
+  # Validate year input to ensure it's within available data range
+  if (!year %in% unique(data$year)) {
+    stop("Invalid year input. Please provide a year present in the dataset (e.g., 1997-2000).")
+  }
+  
+  # Filter data by specified month and year, then compute average temperature
+  temp_result <- data %>%
+    filter(year == year & month_numeric == month_num) %>%
+    summarise(
+      temp_avg = average_fn(temp) %>% 
+        { if (celsius) (. - 32) * (5 / 9) else . }
+    ) %>%
+    pull(temp_avg)  # Extract the result as a single numeric value
+
+  # Return the computed temperature
+  return(temp_result)
+}
+
+```
+Now we test it with the examples given:
+```{r}
+get_temp("Apr", 1999, data = nnmaps)
+```
+
+```{r}
+get_temp("Apr", 1999, data = nnmaps, celsius = TRUE)
+```
+
+```{r}
+get_temp(10, 1998, data = nnmaps, average_fn = median)
+```
+
+```{r}
+try(get_temp(13, 1998, data = nnmaps))  # Case 4: Invalid month input (error)
+```
+
+```{r}
+try(get_temp(2, 2005, data = nnmaps))  # Case 5: Invalid year (error)
+```
+
+```{r}
+get_temp("November", 1999, data =nnmaps, celsius = TRUE,
+         average_fn = function(x) {
+           x %>% sort -> x
+           x[2:(length(x) - 1)] %>% mean %>% return
+         })
+```
+
+## Problem 3 - Visualization
+```{r}
+library(ggplot2)
+art_sales <- read.csv("../data/df_for_ml_improved_new_market.csv")
+```
+
+### a. Is there a change in the sales price in USD over time?
+```{r}
+# Aggregate average sales price per year
+sales_price_over_time <- art_sales %>%
+  group_by(year) %>%  # Get the average price in each year
+  summarise(avg_price = mean(price_usd, na.rm = TRUE))
+
+# Create a simple line plot to visualize sales price over time
+ggplot(sales_price_over_time, aes(x = year, y = avg_price)) +
+  geom_line(color = "blue", size = 1) +  # Blue line for trend
+  geom_point(color = "red", size = 2) +   # Red points for data
+  labs(  # Change the title and labels
+    title = "Average Sales Price Over Time",
+    x = "Year",
+    y = "Average Price (USD)"
+  ) +
+  scale_y_continuous(labels = scales::dollar) +  # Format y-axis in dollars
+  theme_minimal(base_size = 10) +  # Change base font
+  theme(
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5),  # Change title style
+    axis.title = element_text(size = 12)  # Change axis labels
+  )
+
+```
+From this plot, we see that starting from 1997, the overall tread of the sale price is increasing with time. In addition, we can see a peak in sale price at 2008 and dropped later, possibly due to economic recession.
+
+### b. Does the distribution of genre of sales across years appear to change?
+```{r}
+# Reshape genre columns from wide to long format
+art_sales_long <- art_sales %>%
+  pivot_longer(
+    cols = starts_with("Genre___"),  # Select all genre-related columns
+    names_to = "genre",
+    values_to = "present",
+    values_drop_na = TRUE
+  ) %>%
+  filter(present == 1) %>%  # Keep only rows where the genre is present
+  mutate(genre = str_replace(genre, "Genre___", ""))  # Remove "Genre___" prefix from genre labels
+
+# Group data by year and genre to count sales
+genre_distribution <- art_sales_long %>%
+  group_by(year, genre) %>%
+  summarise(count = n(), .groups = "drop")
+
+# Create the updated stacked bar plot
+ggplot(genre_distribution, aes(x = factor(year), y = count, fill = genre)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Set2") +  # Set the color palette
+  labs(  # Change the title and labels
+    title = "Distribution of Genre Sales Across Years",
+    x = "Year",
+    y = "Proportion of Sales",
+    fill = "Genre"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(  # Change title and axis styles
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 12)
+  )
+```
+From this plot, we see that starting from 1997, the distribution of genres changed over time. For example, (almost) no one bought print before 2000, but more people are having print around 2008. Also, we can see there is a decline in the proportion of people getting paintings and others. The proportion of sculpture and photography is stable over time after 2000.
+
+### c. How does the genre affect the change in sales price over time?
+```{r}
+# Calculate average sales price per genre and year
+price_by_genre_over_time <- art_sales_long %>%
+  group_by(genre, year) %>%
+  summarise(avg_price = mean(price_usd, na.rm = TRUE), .groups = "drop")
+
+# For each genre, get the initial price based on the first year of data available
+price_by_genre_over_time <- price_by_genre_over_time %>%
+  group_by(genre) %>%
+  mutate(
+    initial_price = first(avg_price),  # Use the first available year as the baseline
+    normalized_price = (avg_price / initial_price - 1) * 100  # Calculate percentage change
+  ) %>%
+  ungroup()
+
+# Create a line plot for all genres on the same plot to show percentage change over time
+ggplot(price_by_genre_over_time, aes(x = year, y = normalized_price, color = genre)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(  # Change the title and labels
+    title = "Percentage Change in Sales Price Over Time by Genre",
+    subtitle = "(Starting from the First Year of Data)",
+    x = "Year",
+    y = "Percentage Change (%)",
+    color = "Genre"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(  # Change title and axis styles
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5, color = "gray"),  # Centered and in gray
+    axis.title = element_text(size = 12),
+  )
+```
+From this plot, we clearly see that the genre will affect the change in sales price over time. The others and painting has the lowest price increase over time. The print price is changing a over time, with an overall trend of increasing but very difference for each year. The sculpture genre, on the other hand, is increasing steadily over time. And the photography has the fastest and largest change in price. All of them have the highest prices in 2008.
