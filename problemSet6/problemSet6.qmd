@@ -15,5 +15,305 @@ editor: visual
 
 The link to the problem set 5 GitHub repository is at: <https://github.com/skyshi1/STAT506/tree/main/problemSet6>, as a sub-folder of the STATS 506 repository.
 
+## Stratified Bootstrapping
 
-## Problem 1
+### a. Calculate the average RF for each team in the Fielding table
+
+We will first load the Lahman dataset and calculate the Range Factor (RF) for each team using the Fielding table.
+
+```{r}
+# Load necessary libraries
+suppressPackageStartupMessages({
+  library(DBI)         # For database connections
+  library(RSQLite)     # To interact with SQLite database
+  library(dplyr)       # For data manipulation
+  library(parallel)    # For parallel processing
+  library(future)      # For future-based parallelism
+  library(future.apply) # For applying functions in parallel
+})
+
+# Path to the Lahman SQLite database
+db_path <- "../data/lahman_1871-2022.sqlite"
+
+# Connect to the SQLite database
+conn <- dbConnect(RSQLite::SQLite(), db_path)
+
+# Query the Fielding table and select relevant columns
+# Filter out rows where InnOuts (outs on the field) is <= 0 as they are invalid for calculating RF
+fielding_data <- dbGetQuery(
+  conn, 
+  "SELECT teamID, InnOuts, PO, A FROM Fielding WHERE InnOuts > 0"
+)
+
+# Disconnect from the database after data is retrieved
+dbDisconnect(conn)
+```
+
+Calculate RF for each team:
+
+```{r}
+# Calculate RF for each player and prepare the original dataset
+fielding_data <- fielding_data %>%
+  mutate(RF = 3*(PO + A) / InnOuts)
+```
+
+Stratified Bootstrapping Function:
+
+```{r}
+#' This function performs a stratified bootstrap on the dataset, ensuring that resampling occurs within each group (team).
+#'
+#' @param data A data frame containing at least two columns: `teamID` (categorical grouping variable) and `RF` (numeric Range Factor values).
+#' @param num_samples An integer specifying the number of bootstrap samples to generate.
+#' @return A data frame containing bootstrapped RF values for each team, with a `sample_id` column to identify each bootstrap sample.
+stratified_bootstrap <- function(data, num_samples) {
+  # Perform bootstrap resampling 'num_samples' times
+  replicate(
+    num_samples,
+    {
+      # Within each team, resample RF values with replacement and calculate the mean
+      data %>%
+        group_by(teamID) %>%  # Group by teamID for stratified resampling
+        summarise(
+          boot_RF = mean(sample(RF, size = n(), replace = TRUE)),  # Resample RF and calculate mean
+          .groups = "drop"  # Ungroup after summarisation
+        )
+    },
+    simplify = FALSE  # Keep each bootstrap result as a separate data frame
+  ) %>%
+    bind_rows(.id = "sample_id")  # Combine all bootstrap samples into one data frame with sample IDs
+}
+
+```
+
+Without parallel:
+
+```{r}
+# Set the random seed for reproducibility
+set.seed(123)
+
+# Perform stratified bootstrapping for 5000 samples, using 5000 to balance between running time and precision.
+bootstrap_results <- stratified_bootstrap(fielding_data, num_samples = 5000)
+
+# Calculate standard errors for bootstrapped RF values
+bootstrap_summary <- bootstrap_results %>%
+  group_by(teamID) %>%  # Group by team ID
+  summarise(
+    boot_avg_RF = mean(boot_RF),  # Calculate the mean of bootstrapped RF values
+    boot_se = sd(boot_RF),  # Calculate the standard error (SD of bootstrapped RF values)
+    .groups = "drop"  # Remove grouping after summarisation
+  )
+
+# Identify the top 10 teams by average RF
+top_10_teams <- bootstrap_summary %>%
+  arrange(desc(boot_avg_RF)) %>%  # Sort by descending average RF
+  slice_head(n = 10)  # Select the top 10 teams
+
+# Print the results for the top 10 teams
+print(top_10_teams)
+
+```
+
+Parallel processing with `parallel`:
+
+```{r}
+# Detect the number of available cores and reserve one core for system processes
+num_cores <- detectCores() - 1
+
+# Create a cluster with the specified number of cores
+cl <- makeCluster(num_cores)
+
+# Export necessary variables and functions to the cluster
+clusterExport(cl, varlist = c("fielding_data", "stratified_bootstrap"))
+invisible(clusterEvalQ(cl, library(dplyr)))  # Ensure dplyr is available on each cluster node, but hide output
+
+# Set a random seed for reproducibility
+set.seed(123)
+
+# Perform parallel bootstrapping
+bootstrap_results_parallel <- parLapply(
+  cl,
+  1:5000,  # Perform 5000 bootstrap iterations
+  function(x) stratified_bootstrap(fielding_data, num_samples = 1)  # One sample per iteration
+)
+
+# Stop the cluster to free up resources
+stopCluster(cl)
+
+# Combine results from all parallel iterations into a single data frame
+bootstrap_results_parallel <- bind_rows(bootstrap_results_parallel, .id = "sample_id")
+
+# Calculate standard errors for bootstrapped RF values
+bootstrap_summary_parallel <- bootstrap_results_parallel %>%
+  group_by(teamID) %>%  # Group by team ID
+  summarise(
+    boot_avg_RF = mean(boot_RF),  # Calculate mean of bootstrapped RF values
+    boot_se = sd(boot_RF),  # Calculate standard error (SD of bootstrapped RF values)
+    .groups = "drop"  # Remove grouping after summarisation
+  )
+```
+
+Using `future` Package
+
+```{r}
+# Set up parallel processing using the `future` package
+plan(multisession, workers = num_cores)  # Use multiple sessions with a specified number of workers
+set.seed(123)  # Set a global seed for reproducibility across parallel processes
+
+# Perform stratified bootstrap using future_lapply with parallel-safe random numbers
+bootstrap_results_future <- future_lapply(
+  1:5000,  # Perform 1,000 bootstrap iterations
+  function(x) stratified_bootstrap(fielding_data, num_samples = 1),  # Apply the bootstrap function
+  future.seed = TRUE  # Ensure parallel-safe random number generation
+)
+
+# Revert to sequential processing
+plan(sequential)
+
+# Combine the list of bootstrap results into a single data frame
+bootstrap_results_future_df <- bind_rows(bootstrap_results_future)
+
+# Calculate summary statistics (mean and standard error) for the bootstrap results
+bootstrap_summary_future <- bootstrap_results_future_df %>%
+  group_by(teamID) %>%  # Group by team ID
+  summarise(
+    boot_avg_RF = mean(boot_RF),  # Calculate the average Range Factor
+    boot_se = sd(boot_RF),        # Calculate the standard error
+    .groups = "drop"              # Drop grouping after summarizing
+  )
+```
+
+### b. Generate a table showing the estimated RF and associated standard errors
+
+```{r}
+# Combine Results for Top 10 Teams from All Approaches
+combined_results <- top_10_teams %>%
+  rename(boot_avg_RF_no_parallel = boot_avg_RF, boot_se_no_parallel = boot_se) %>%
+  left_join(
+    bootstrap_summary_parallel %>% rename(boot_avg_RF_parallel = boot_avg_RF, boot_se_parallel = boot_se),
+    by = "teamID"
+  ) %>%
+  left_join(
+    bootstrap_summary_future %>% rename(boot_avg_RF_future = boot_avg_RF, boot_se_future = boot_se),
+    by = "teamID"
+  )
+```
+
+Generate the table:
+```{r}
+suppressPackageStartupMessages({
+  library(knitr)
+  library(kableExtra)
+})
+
+# Combine Results for Top 10 Teams from All Approaches
+formatted_combined_results <- top_10_teams %>%
+  rename(
+    `Avg RF (No Parallel)` = boot_avg_RF,
+    `SE (No Parallel)` = boot_se
+  ) %>%
+  left_join(
+    bootstrap_summary_parallel %>%
+      rename(
+        `Avg RF (Parallel)` = boot_avg_RF,
+        `SE (Parallel)` = boot_se
+      ),
+    by = "teamID"
+  ) %>%
+  left_join(
+    bootstrap_summary_future %>%
+      rename(
+        `Avg RF (Future)` = boot_avg_RF,
+        `SE (Future)` = boot_se
+      ),
+    by = "teamID"
+  ) %>%
+  rename(`Team ID` = teamID)
+
+# Display the formatted table
+formatted_combined_results %>%
+  kable(
+    format = "html",
+    caption = "Bootstrap Results for Top 10 Teams: Comparison Across Methods",
+    align = "c"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(0, bold = TRUE, background = "#D3D3D3")  # Style the header row
+```
+
+### c. Discussions
+
+Compare the performances
+
+```{r}
+# Load necessary library
+library(microbenchmark)
+
+# Define the benchmarking functions
+no_parallel_benchmark <- function() {
+  stratified_bootstrap(fielding_data, num_samples = 5000)
+}
+
+parallel_benchmark <- function() {
+  cl <- makeCluster(detectCores() - 1)
+  clusterExport(cl, varlist = c("fielding_data", "stratified_bootstrap"))
+  clusterEvalQ(cl, library(dplyr))
+  parLapply(
+    cl,
+    1:5000,
+    function(x) stratified_bootstrap(fielding_data, num_samples = 1)
+  )
+  stopCluster(cl)
+}
+
+future_benchmark <- function() {
+  plan(multisession, workers = detectCores() - 1)
+  future_lapply(
+    1:5000,
+    function(x) stratified_bootstrap(fielding_data, num_samples = 1),
+    future.seed = TRUE
+  )
+  plan(sequential)
+}
+
+# Benchmark the three approaches
+benchmark_results <- microbenchmark(
+  No_Parallel = no_parallel_benchmark(),
+  Parallel = parallel_benchmark(),
+  Future = future_benchmark(),
+  times = 5  # Number of repetitions for each method
+)
+```
+
+Compare the results in a table.
+
+```{r}
+# Create a summary table from the benchmark results
+benchmark_summary <- summary(benchmark_results)[, c("expr", "mean", "median", "min", "max")]
+
+# Format the table for readability
+kable(
+  benchmark_summary,
+  format = "html",
+  align = "c",
+  col.names = c("Method", "Mean (sec)", "Median (sec)", "Min (sec)", "Max (sec)"),
+  caption = "Benchmark Results for Stratified Bootstrapping Approaches"
+) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+Compare the results (this is written with one run, the exact values might change as I recomplile this file):
+
+- **Consistency Across Methods**: The average RF (`Avg RF`) and standard errors (`SE`) across all three methods are very consistent, indicating that the parallelization approaches do not introduce any bias into the estimates. The small differences observed are likely due to random sampling variability inherent in the bootstrapping process.
+
+- **Reliability of Results**: All methods provide reliable estimates of the Range Factor (RF) and its standard errors. The close agreement across methods confirms that parallelization improves runtime without compromising accuracy.
+
+- **Stability of SE Estimates**: The standard error (`SE`) values across the three methods are nearly identical. This consistency suggests that using 5000 bootstraps is sufficient for precise and stable estimates.
+
+Compare the performace:
+
+- **No Parallel**: The no-parallel approach is the slowest, with a mean runtime of `r benchmark_summary$mean[benchmark_summary$expr == "No_Parallel"]` seconds. This is because all bootstrap iterations are computed sequentially on a single core. While accurate, the runtime is impractical for larger datasets or higher bootstrap sample sizes.
+
+- **Parallel**: The `parallel` method significantly reduces runtime to `r benchmark_summary$mean[benchmark_summary$expr == "Parallel"]` seconds by using multiple CPU cores. This makes `parallel` an efficient solution for computationally intensive tasks like bootstrapping.
+
+- **Future**: The `future` package achieves a similar runtime of `r benchmark_summary$mean[benchmark_summary$expr == "Future"]` seconds, comparable to `parallel`. This also makes `future` an efficient solution for computationally intensive tasks like bootstrapping.
