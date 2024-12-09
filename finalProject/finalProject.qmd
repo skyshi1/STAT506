@@ -121,6 +121,7 @@ plot_rejection_rates <- function(summary_results) {
 plot_tstat_variability <- function(results_df) {
   ggplot(results_df, aes(x = factor(SampleSize), y = TStatistic, fill = Distribution)) +
     geom_boxplot(alpha = 0.7, outlier.color = "red", outlier.size = 1) +
+    coord_cartesian(ylim = c(-5, 5)) +  # Adjust the range to focus on the central part
     labs(
       title = "Variability of T-Statistics by Distribution and Sample Size",
       x = "Sample Size",
