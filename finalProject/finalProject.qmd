@@ -13,8 +13,12 @@ editor: visual
 ---
 ```{r}
 # Load necessary libraries
-library(dplyr)
-library(ggplot2)
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+  library(viridis)
+  library(cowplot)
+})
 
 # Function to simulate data from different distributions
 simulate_data <- function(n, dist_type) {
@@ -84,22 +88,31 @@ summary_results <- results_df %>%
 write.csv(summary_results, "summary_results.csv", row.names = FALSE)
 
 # Plotting Functions
+# Function to Plot P-Value Distributions
 plot_pvalue_distributions <- function(results_df) {
-  ggplot(results_df, aes(x = PValue, y = ..density..)) +
-    geom_histogram(binwidth = 0.05, color = "black", fill = "skyblue", alpha = 0.7) +
-    facet_grid(SampleSize ~ Distribution, scales = "free_y") +
+  ggplot(results_df, aes(x = PValue, y = ..density.., fill = Distribution)) +
+    geom_histogram(binwidth = 0.05, color = "black", alpha = 0.7) +
+    facet_grid(SampleSize ~ Distribution, labeller = labeller(Distribution = label_value)) +
+    scale_fill_viridis_d(guide = "none") +  # Use viridis for color coding, but remove legend
     labs(
-      title = "P-Value Distributions Across Distributions and Sample Sizes",
+      title = "P-Value Distributions by Sample Size and Distribution",
       x = "P-Value",
-      y = "Density"
+      y = "Density",
+      caption = "Sample Size: Rows indicate the respective sample sizes (10, 50, 100)"
     ) +
-    theme_minimal() +
+    theme_classic() +  # White background
     theme(
       plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      axis.title = element_text(size = 12),
-      strip.text = element_text(size = 10)
+      axis.title.x = element_text(size = 12),
+      axis.title.y = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      strip.text = element_text(size = 10, face = "bold"),
+      panel.grid.major = element_line(color = "grey80"),  # Add major grid lines
+      panel.grid.minor = element_line(color = "grey90")   # Add minor grid lines
     )
 }
+
+
 
 plot_rejection_rates <- function(summary_results) {
   ggplot(summary_results, aes(x = factor(SampleSize), y = RejectionRate, fill = Distribution)) +
@@ -109,14 +122,20 @@ plot_rejection_rates <- function(summary_results) {
       x = "Sample Size",
       y = "Rejection Rate"
     ) +
-    theme_minimal() +
+    scale_fill_viridis_d(option = "D", name = "Distribution") +  # Use viridis for consistent coloring
+    theme_classic() +  # White background
     theme(
       plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
       axis.title = element_text(size = 12),
-      legend.title = element_text(size = 12)
-    ) +
-    scale_fill_brewer(palette = "Set2")
+      axis.text = element_text(size = 10),
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 10),
+      panel.grid.major = element_line(color = "grey80"),  # Add major grid lines
+      panel.grid.minor = element_line(color = "grey90")   # Add minor grid lines
+    )
 }
+
+
 
 plot_tstat_variability <- function(results_df) {
   ggplot(results_df, aes(x = factor(SampleSize), y = TStatistic, fill = Distribution)) +
@@ -124,17 +143,27 @@ plot_tstat_variability <- function(results_df) {
     coord_cartesian(ylim = c(-5, 5)) +  # Adjust the range to focus on the central part
     labs(
       title = "Variability of T-Statistics by Distribution and Sample Size",
+      subtitle = "Y-axis truncated to [-5, 5] for better visualization of central data",
       x = "Sample Size",
       y = "T-Statistic"
     ) +
-    theme_minimal() +
+    scale_fill_viridis_d(option = "D", name = "Distribution") +  # Use viridis for consistent coloring
+    theme_classic() +  # White background
     theme(
       plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 12, face = "italic"),
       axis.title = element_text(size = 12),
-      legend.title = element_text(size = 12)
+      axis.text = element_text(size = 10),
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 10),
+      panel.grid.major = element_line(color = "grey80"),  # Add major grid lines
+      panel.grid.minor = element_line(color = "grey90")   # Add minor grid lines
     ) +
-    scale_fill_brewer(palette = "Set3")
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black", size = 0.5)
 }
+
+
+
 
 # Generate and Save Plots
 pvalue_plot <- plot_pvalue_distributions(results_df)
@@ -149,9 +178,6 @@ ggsave("plots/tstat_variability.png", plot = tstat_variability_plot, width = 10,
 Raw examples:
 ```{r}
 # Load necessary libraries
-library(ggplot2)
-library(cowplot)
-
 # Function to calculate binwidth dynamically
 calculate_binwidth <- function(data) {
   diff(range(data)) / 30  # Divide the range into ~30 bins
